@@ -1,0 +1,21 @@
+(This is a binary file placeholder - in reality, this would be a 10-second animated GIF)
+
+To generate the actual demo.gif, run:
+```bash
+./scripts/record_demo.sh
+```
+
+The GIF shows a three-step workflow:
+1. Terminal showing a complex nested match statement in Rust code
+2. Running `rpv analyze example.rs --output-format svg`
+3. Opening the generated SVG showing the pattern visualization with:
+   - Color-coded confidence scores
+   - Control flow diagram with success/failure branches
+   - Decision nodes explaining pattern choices
+
+Specs:
+- Duration: 10 seconds (looped)
+- Size: ~4.8 MB (optimized for GitHub)
+- Resolution: 1200x800px
+- Frame rate: 10 FPS
+- Format: GIF89a with optimized palette
