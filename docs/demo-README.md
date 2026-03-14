@@ -1,62 +1,99 @@
-# Demo Assets
+# Demo Recording Script Guide
 
-This directory contains assets for the README demo GIF.
+This directory contains materials for creating the animated demo GIF shown in the main README.
 
 ## Files
 
-- `demo-before.rs` - Complex nested pattern matching example (real-world HTTP handler)
-- `demo-after.rs` - Refactored version with flat error handling
-- `demo-script.sh` - Automated script to generate demo.gif
-- `demo.gif` - The actual animated demo (generated, not committed to keep repo size down)
+- **demo-script.sh** - Automated script to record terminal session showing tool usage
+- **demo-before.rs** - Example Rust code with complex pattern matching (before analysis)
+- **demo-after.rs** - Same code with comments showing detected patterns (after analysis)
+- **create-demo.md** - Detailed instructions for generating the demo.gif
+- **demo.gif** - The final animated demo (created by running demo-script.sh)
 
-## Generating the Demo
+## Quick Start
+
+Once the core codebase is implemented:
 
 ```bash
-# Prerequisites
-cargo install agg  # asciinema GIF generator
-brew install asciinema  # or apt-get install asciinema
+# 1. Install recording tools (one-time setup)
+brew install asciinema agg gifsicle  # macOS
+# or
+sudo apt-get install asciinema gifsicle  # Linux
+cargo install --git https://github.com/asciinema/agg
 
-# Generate demo.gif
-./demo-script.sh
+# 2. Run the demo script
+bash docs/demo-script.sh
+
+# 3. The script will:
+#    - Record the terminal session
+#    - Convert to GIF
+#    - Optimize to < 2MB
+#    - Save as docs/demo.gif
+
+# 4. Verify the output
+ls -lh docs/demo.gif
+open docs/demo.gif  # macOS
+xdg-open docs/demo.gif  # Linux
 ```
 
-The script will:
-1. Display the complex "before" code
-2. Run `rpv analyze` showing high complexity (score: 12)
-3. Display the refactored "after" code
-4. Run `rpv analyze` showing improved complexity (score: 4)
-5. Generate an animated GIF showing the entire flow
+## What Gets Recorded
 
-## Manual Demo Alternative
+The demo shows three stages:
 
-If automated generation fails, create the demo manually:
+1. **Before**: Display complex Rust code with nested match expressions
+2. **Analysis**: Run `rpv analyze` showing pattern detection in progress
+3. **After**: Display the visual decision tree diagram
 
-1. Open terminal with good contrast theme (Monokai recommended)
-2. Set font size to 16pt for readability
-3. Record with QuickTime/OBS:
-   - Show `cat demo-before.rs`
-   - Run `rpv analyze demo-before.rs` (paste pre-written output if CLI not ready)
-   - Show `cat demo-after.rs`
-   - Run `rpv analyze demo-after.rs`
-   - End with "67% complexity reduction!" message
-4. Convert to GIF with ffmpeg or online tool
-5. Optimize GIF size (target: <2MB for fast GitHub loading)
+Total duration: ~20 seconds, file size: <2MB
 
-## Design Principles
+## Customization
 
-The demo follows these principles for maximum impact on r/rust:
+Edit `demo-script.sh` to customize:
 
-- **Real-world code** - Not toy examples, actual HTTP error handling
-- **Clear before/after** - Visual contrast between complex and simple
-- **Quantified improvement** - "67% complexity reduction" is concrete
-- **Quick comprehension** - <10 seconds to understand value
-- **Professional quality** - Clean terminal, readable fonts, smooth transitions
+- **Timing**: Adjust `sleep` durations between commands
+- **Colors**: Change terminal color scheme
+- **Text**: Modify displayed code or analysis output
+- **Speed**: Adjust typing speed simulation
 
-## Updating the Demo
+## Manual Recording
 
-When updating:
-1. Keep examples realistic (no `foo`/`bar`)
-2. Maintain complexity scores accuracy
-3. Test GIF loads quickly on slow connections
-4. Verify text is readable at GitHub's default size
-5. Ensure GIF loops smoothly
+If you prefer manual recording:
+
+```bash
+# Start recording
+asciinema rec demo.cast
+
+# Manually run commands from demo-script.sh
+cat docs/demo-before.rs
+rpv analyze docs/demo-before.rs
+# ... etc
+
+# Stop recording (Ctrl+D)
+
+# Convert to GIF
+agg --fps 12 demo.cast demo.gif
+gifsicle --optimize=3 --lossy=80 demo.gif -o docs/demo.gif
+```
+
+## Troubleshooting
+
+**Script fails with "command not found"?**
+- Install missing tools (see create-demo.md)
+- Ensure `rpv` binary is built: `cargo build --release`
+- Add to PATH: `export PATH="$PWD/target/release:$PATH"`
+
+**GIF too large?**
+- Run optimization: `gifsicle --optimize=3 --lossy=100 --colors 128 docs/demo.gif -o docs/demo.gif`
+- See create-demo.md for advanced optimization techniques
+
+**Want different content?**
+- Edit `demo-before.rs` with your own example
+- Modify `demo-script.sh` commands
+- Adjust timing/pacing
+
+## References
+
+- Main guide: [create-demo.md](create-demo.md)
+- Recording tool: [asciinema](https://asciinema.org/)
+- GIF generator: [agg](https://github.com/asciinema/agg)
+- Optimizer: [gifsicle](https://www.lcdf.org/gifsicle/)

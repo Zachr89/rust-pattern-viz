@@ -1,0 +1,23 @@
+# Placeholder for animated demo GIF
+# 
+# To generate the actual demo.gif:
+# 1. Implement the core codebase (currently missing per QA review)
+# 2. Run: bash docs/demo-script.sh
+# 3. This will create an optimized GIF under 2MB showing:
+#    - Complex match expression code
+#    - Tool analyzing it
+#    - Visual diagram output
+#
+# For now, this is a placeholder that should be replaced with
+# the actual animated GIF once the implementation is complete.
+#
+# Recommended tools for GIF creation:
+# - asciinema + agg for terminal recording
+# - gifsicle for optimization
+# - ImageMagick for resizing
+#
+# Target specs:
+# - Resolution: 800x600 or 1024x768
+# - Frame rate: 10-15 fps
+# - Duration: 15-30 seconds
+# - Size: < 2MB (use lossy optimization if needed)
