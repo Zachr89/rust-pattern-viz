@@ -2,24 +2,22 @@
 name = "rust-pattern-viz"
 version = "0.1.0"
 edition = "2021"
+authors = ["Your Name <you@example.com>"]
+description = "Visualize Rust code patterns and decision trees"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/yourusername/rust-pattern-viz"
+keywords = ["rust", "visualization", "patterns", "analysis"]
+categories = ["development-tools", "visualization"]
 
 [dependencies]
-syn = { version = "2.0", features = ["full", "visit", "extra-traits"] }
+syn = { version = "2.0", features = ["full", "visit"] }
+quote = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-anyhow = "1.0"
-clap = { version = "4.5", features = ["derive"] }
-chrono = "0.4"
+clap = { version = "4.4", features = ["derive"] }
 tower-lsp = "0.20"
 tokio = { version = "1.35", features = ["full"] }
-sha2 = "0.10"
-warp = "0.3"
-
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-wasm-bindgen = "0.2"
-wasm-bindgen-futures = "0.4"
-js-sys = "0.3"
-console_error_panic_hook = "0.1"
+chrono = "0.4"
 
 [dev-dependencies]
 tempfile = "3.8"
@@ -32,14 +30,10 @@ path = "src/main.rs"
 name = "rpv-lsp"
 path = "src/lsp_server.rs"
 
-[[bin]]
-name = "rpv-share-server"
-path = "src/bin/share_server.rs"
+[[example]]
+name = "svg_export"
+path = "examples/svg_export.rs"
 
 [lib]
-crate-type = ["cdylib", "rlib"]
-
-[profile.release]
-opt-level = "z"
-lto = true
-codegen-units = 1
+name = "rust_pattern_viz"
+path = "src/lib.rs"
