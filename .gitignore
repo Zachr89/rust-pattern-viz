@@ -4,15 +4,6 @@
 *.pdb
 Cargo.lock
 
-# VS Code Extension
-vscode-extension/node_modules/
-vscode-extension/out/
-vscode-extension/*.vsix
-
-# Share storage
-.rpv-shares/
-*.rpv-shares/
-
 # IDE
 .vscode/
 .idea/
@@ -24,12 +15,15 @@ vscode-extension/*.vsix
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
+# Build artifacts
+*.vsix
+node_modules/
 
-# Environment
-.env
-.env.local
+# Demo generation artifacts
+docs/demo.cast
+docs/*.tmp
+docs/temp_*
 
-# Git config with tokens (SECURITY)
-.git/config
+# Generated docs
+*.html
+*.pdf

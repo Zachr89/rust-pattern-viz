@@ -1,0 +1,15 @@
+# Placeholder: This should be replaced with an actual screenshot
+# 
+# To create this screenshot:
+# 1. Open VS Code with the rust-pattern-viz extension installed
+# 2. Open a Rust file with complex pattern matching
+# 3. Hover over a function with nested matches
+# 4. Take a screenshot showing:
+#    - The code with syntax highlighting
+#    - The hover popup with complexity score
+#    - The decision tree visualization
+# 5. Crop to ~1200x800px for optimal README display
+# 6. Save as vscode-hover.png
+#
+# For now, this file serves as a placeholder to prevent 404s
+# The actual image should be committed separately after generation
