@@ -1,134 +1,121 @@
 # rust-pattern-viz
 
-**Visualize AI code generation decision trees for Rust projects**
+*Visualize AI code generation decision trees directly in your editor*
 
 ## What is this?
 
-`rust-pattern-viz` is a Rust-native CLI tool and library that makes AI copilot behavior transparent. It parses Rust source files with embedded AI suggestion metadata, extracts pattern matching logic, and generates interactive SVG/HTML visualizations showing imports considered, per-line confidence scores, and reasoning DAGs. Ideal for code reviews, PR comments, and understanding how AI assistants make decisions.
+`rust-pattern-viz` is a Rust-native CLI tool and library that makes AI copilot behavior transparent. It parses Rust source files with embedded AI suggestion metadata, extracts pattern matching logic, and generates interactive SVG/HTML visualizations showing what imports were considered, confidence scores per line, and the complete reasoning DAG. Perfect for code reviews, PR comments, and understanding how AI assistants make decisions.
 
 ## Features
 
-- **Parse AI metadata** from Rust source comments or sidecar files
-- **Extract decision trees** showing what alternatives the AI considered
-- **Generate interactive visualizations** (SVG + HTML) with zoom/pan controls
-- **LSP server integration** for real-time IDE insights
-- **VS Code extension** for seamless editor integration
-- **Confidence scoring** to highlight uncertain suggestions
-- **Export formats**: SVG, HTML, JSON, DOT (Graphviz)
-- **CLI and library** APIs for flexible integration
+- **Parse AI metadata** from Rust source files with embedded suggestions
+- **Extract decision trees** showing imports, alternatives, and confidence scores
+- **Generate interactive visualizations** as SVG/HTML for easy sharing
+- **CLI tool** for batch processing and CI/CD integration
+- **Library API** for programmatic access and custom tooling
+- **LSP server** for real-time editor integration
+- **VS Code extension** for inline visualization and hover tooltips
+- **CI/CD ready** with GitHub Actions support
 
 ## Quick Start
 
 ### Installation
 
+**CLI tool:**
 ```bash
-# Install via cargo
 cargo install rust-pattern-viz
-
-# Or build from source
-git clone https://github.com/yourusername/rust-pattern-viz.git
-cd rust-pattern-viz
-cargo build --release
 ```
 
-### Basic Usage
+**As a library:**
+```toml
+[dependencies]
+rust-pattern-viz = "0.1"
+```
 
+**VS Code extension:**
+1. Download `.vsix` from releases
+2. Run `code --install-extension rust-pattern-viz-0.1.0.vsix`
+3. Reload VS Code
+
+### Usage
+
+**CLI:**
 ```bash
 # Analyze a single file
-rust-pattern-viz analyze src/main.rs
+rust-pattern-viz analyze src/main.rs --output viz.html
 
-# Generate visualization
-rust-pattern-viz visualize src/main.rs --output decision-tree.html
+# Batch process a directory
+rust-pattern-viz analyze src/ --format svg --output-dir ./visualizations
 
-# Start LSP server for IDE integration
-rust-pattern-viz lsp
+# Generate JSON report for CI
+rust-pattern-viz analyze src/ --format json > report.json
 ```
 
-### VS Code Extension
-
-1. Install the extension from `vscode-extension/`
-2. Open a Rust project
-3. Right-click any file → "Visualize AI Patterns"
-4. View decision trees inline or export to HTML
-
-## Usage Examples
-
-### CLI
-
-```bash
-# Analyze with custom output format
-rust-pattern-viz analyze src/lib.rs --format json > analysis.json
-
-# Generate SVG with confidence threshold
-rust-pattern-viz visualize src/analyzer.rs --format svg --min-confidence 0.8
-
-# Batch process directory
-rust-pattern-viz analyze src/ --recursive --output reports/
-```
-
-### Library
-
+**Library:**
 ```rust
 use rust_pattern_viz::{Analyzer, Visualizer};
 
-// Parse source with AI metadata
 let analyzer = Analyzer::new();
 let decisions = analyzer.parse_file("src/main.rs")?;
 
-// Generate visualization
 let visualizer = Visualizer::new();
 let html = visualizer.render_html(&decisions)?;
 std::fs::write("output.html", html)?;
 ```
 
-### Embedding AI Metadata
+**VS Code:**
+1. Open any Rust file with AI metadata comments
+2. Hover over annotated code to see decision info
+3. Run command `Rust Pattern Viz: Show Visualization` (Ctrl+Shift+P)
+4. View interactive DAG in the side panel
 
-Add comments to your Rust code:
+## Examples
+
+Check `examples/sample.rs` for a file with embedded AI metadata:
 
 ```rust
-// @ai-suggestion: considered std::collections::HashMap, confidence: 0.95
-// @ai-alternative: hashbrown::HashMap, confidence: 0.78
+// @ai-suggestion: import std::collections::HashMap | confidence: 0.92
+// @ai-alternatives: ["std::collections::BTreeMap (0.65)", "hashbrown::HashMap (0.48)"]
 use std::collections::HashMap;
+```
 
-// @ai-pattern: builder pattern, confidence: 0.88
-// @ai-reasoning: mutable state, method chaining
-pub struct Config {
-    // ...
-}
+Run:
+```bash
+cargo run --example sample
 ```
 
 ## Tech Stack
 
-- **Core**: Rust 2021 edition
-- **Parsing**: `syn`, `quote` for Rust AST manipulation
-- **Visualization**: `svg` crate, embedded JavaScript for interactivity
-- **LSP**: `tower-lsp` for Language Server Protocol
-- **VS Code Extension**: TypeScript + VS Code API
-- **CLI**: `clap` for argument parsing
-- **Testing**: `cargo test` with integration tests
+- **Core:** Rust (CLI + library + LSP server)
+- **Parsing:** `syn` for Rust AST analysis, custom comment parser
+- **Visualization:** SVG generation with `resvg`, HTML templating
+- **LSP:** `tower-lsp` for editor integration
+- **VS Code Extension:** TypeScript, VS Code API
+- **CI/CD:** GitHub Actions for testing and releases
 
 ## Development
 
 ```bash
+# Build everything
+cargo build --release
+
 # Run tests
 cargo test
 
-# Run with examples
-cargo run --example sample
-
 # Build VS Code extension
-cd vscode-extension
-npm install
-npm run compile
+cd vscode-extension && npm install && npm run compile
+
+# Start LSP server for development
+cargo run --bin lsp-server
 ```
 
-## CI/CD
+## Architecture
 
-GitHub Actions workflow (`.github/workflows/ci.yml`) automatically:
-- Runs tests on push/PR
-- Builds for Linux, macOS, Windows
-- Publishes releases to crates.io
-- Packages VS Code extension
+See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed design docs including:
+- Metadata format specification
+- Decision tree data structures
+- Visualization rendering pipeline
+- LSP protocol implementation
 
 ## License
 
@@ -136,4 +123,6 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**Contributing**: Issues and PRs welcome! See [ARCHITECTURE.md](ARCHITECTURE.md) for codebase overview.
+**Contributing:** PRs welcome! Please open an issue first to discuss major changes.
+
+**Support:** File issues on GitHub or reach out via Discussions.
