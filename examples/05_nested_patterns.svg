@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 630" width="800" height="630">
+  <style>
+    .title { font-family: 'Courier New', monospace; font-size: 18px; font-weight: bold; fill: #1a1a1a; }
+    .subtitle { font-family: 'Courier New', monospace; font-size: 12px; fill: #666; }
+    .pattern-box { fill: #c8e6c9; stroke: #1976d2; stroke-width: 2; }
+    .pattern-text { font-family: 'Courier New', monospace; font-size: 11px; fill: #1a1a1a; }
+    .confidence { font-family: 'Courier New', monospace; font-size: 10px; fill: #666; }
+    .decision-box { fill: #fff9c4; stroke: #f57c00; stroke-width: 2; }
+    .decision-text { font-family: 'Courier New', monospace; font-size: 11px; fill: #1a1a1a; }
+  </style>
+  
+  <text x="20" y="30" class="title">Pattern Analysis: Nested Patterns</text>
+  <text x="20" y="50" class="subtitle">File: examples/05_nested_patterns.rs</text>
+  <text x="20" y="65" class="subtitle">Patterns: 4 | Confidence: High</text>
+  
+  <g transform="translate(20, 90)">
+    <rect class="pattern-box" x="0" y="0" width="760" height="105" rx="5"/>
+    <text x="10" y="20" class="pattern-text" font-weight="bold">Pattern: Deep nested matching</text>
+    <text x="10" y="35" class="pattern-text">Line 40-52: ApiResponse Success with nested Data and Metadata</text>
+    <text x="10" y="50" class="pattern-text">Reasoning: Multi-level destructuring accesses deeply nested fields in</text>
+    <text x="10" y="65" class="pattern-text">one pattern. Eliminates boilerplate for complex data structures.</text>
+    <text x="10" y="80" class="pattern-text">Common in API response handling and configuration parsing.</text>
+    <text x="10" y="95" class="confidence">Confidence: 92% (High)</text>
+  </g>
+  
+  <g transform="translate(20, 215)">
+    <rect class="pattern-box" x="0" y="0" width="760" height="105" rx="5"/>
+    <text x="10" y="20" class="pattern-text" font-weight="bold">Pattern: Nested pattern with vector matching</text>
+    <text x="10" y="35" class="pattern-text">Line 67-79: ApiResponse with filter_map over nested Status enum</text>
+    <text x="10" y="50" class="pattern-text">Reasoning: Combines structural matching with iterator patterns.</text>
+    <text x="10" y="65" class="pattern-text">filter_map applies nested pattern match to extract specific variants.</text>
+    <text x="10" y="80" class="pattern-text">Enables declarative filtering of complex nested data.</text>
+    <text x="10" y="95" class="confidence">Confidence: 89% (High)</text>
+  </g>
+  
+  <g transform="translate(20, 340)">
+    <rect class="pattern-box" x="0" y="0" width="760" height="90" rx="5"/>
+    <text x="10" y="20" class="pattern-text" font-weight="bold">Pattern: Nested with boolean logic</text>
+    <text x="10" y="35" class="pattern-text">Line 86-91: matches! with nested Metadata destructuring</text>
+    <text x="10" y="50" class="pattern-text">Reasoning: matches! macro enables complex nested patterns in boolean</text>
+    <text x="10" y="65" class="pattern-text">contexts. Useful for precondition checks and filter predicates.</text>
+    <text x="10" y="80" class="confidence">Confidence: 87% (High)</text>
+  </g>
+  
+  <g transform="translate(20, 450)">
+    <rect class="pattern-box" x="0" y="0" width="760" height="90" rx="5"/>
+    <text x="10" y="20" class="pattern-text" font-weight="bold">Pattern: Recursive nested patterns</text>
+    <text x="10" y="35" class="pattern-text">Line 103-115: ConfigValue with recursive flatten_config calls</text>
+    <text x="10" y="50" class="pattern-text">Reasoning: Recursive functions with nested pattern matching handle</text>
+    <text x="10" y="65" class="pattern-text">tree-like data structures. Each level unwraps and processes.</text>
+    <text x="10" y="80" class="confidence">Confidence: 91% (High)</text>
+  </g>
+  
+  <g transform="translate(20, 560)">
+    <rect class="decision-box" x="0" y="0" width="760" height="50" rx="5"/>
+    <text x="10" y="20" class="decision-text" font-weight="bold">Decision: Nested Pattern Strategy</text>
+    <text x="10" y="35" class="decision-text">Choice: Deep destructuring vs incremental unwrapping</text>
+  </g>
+</svg>

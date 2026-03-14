@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 630" width="800" height="630">
+  <style>
+    .title { font-family: 'Courier New', monospace; font-size: 18px; font-weight: bold; fill: #1a1a1a; }
+    .subtitle { font-family: 'Courier New', monospace; font-size: 12px; fill: #666; }
+    .pattern-box { fill: #c8e6c9; stroke: #1976d2; stroke-width: 2; }
+    .pattern-text { font-family: 'Courier New', monospace; font-size: 11px; fill: #1a1a1a; }
+    .confidence { font-family: 'Courier New', monospace; font-size: 10px; fill: #666; }
+    .decision-box { fill: #fff9c4; stroke: #f57c00; stroke-width: 2; }
+    .decision-text { font-family: 'Courier New', monospace; font-size: 11px; fill: #1a1a1a; }
+  </style>
+  
+  <text x="20" y="30" class="title">Pattern Analysis: Result Error Handling</text>
+  <text x="20" y="50" class="subtitle">File: examples/02_result_error_handling.rs</text>
+  <text x="20" y="65" class="subtitle">Patterns: 4 | Confidence: High</text>
+  
+  <g transform="translate(20, 90)">
+    <rect class="pattern-box" x="0" y="0" width="760" height="90" rx="5"/>
+    <text x="10" y="20" class="pattern-text" font-weight="bold">Pattern: Early return with ? operator</text>
+    <text x="10" y="35" class="pattern-text">Line 19-23: File::open(path)? and read_to_string(&mut contents)?</text>
+    <text x="10" y="50" class="pattern-text">Reasoning: ? operator propagates errors up the call stack, allowing</text>
+    <text x="10" y="65" class="pattern-text">concise error handling without explicit match on every Result.</text>
+    <text x="10" y="80" class="confidence">Confidence: 92% (High)</text>
+  </g>
+  
+  <g transform="translate(20, 200)">
+    <rect class="pattern-box" x="0" y="0" width="760" height="90" rx="5"/>
+    <text x="10" y="20" class="pattern-text" font-weight="bold">Pattern: Error transformation with match</text>
+    <text x="10" y="35" class="pattern-text">Line 28-31: match input.parse() with custom error wrapping</text>
+    <text x="10" y="50" class="pattern-text">Reasoning: Converting stdlib errors to domain-specific AppError</text>
+    <text x="10" y="65" class="pattern-text">provides better error context and unified error handling.</text>
+    <text x="10" y="80" class="confidence">Confidence: 89% (High)</text>
+  </g>
+  
+  <g transform="translate(20, 310)">
+    <rect class="pattern-box" x="0" y="0" width="760" height="90" rx="5"/>
+    <text x="10" y="20" class="pattern-text" font-weight="bold">Pattern: Chained Result operations</text>
+    <text x="10" y="35" class="pattern-text">Line 36-39: Multiple ? operators in sequence</text>
+    <text x="10" y="50" class="pattern-text">Reasoning: Railway-oriented programming pattern. Each ? short-circuits</text>
+    <text x="10" y="65" class="pattern-text">on Err, or continues with Ok value. Enables functional error handling.</text>
+    <text x="10" y="80" class="confidence">Confidence: 90% (High)</text>
+  </g>
+  
+  <g transform="translate(20, 420)">
+    <rect class="pattern-box" x="0" y="0" width="760" height="90" rx="5"/>
+    <text x="10" y="20" class="pattern-text" font-weight="bold">Pattern: Exhaustive error matching</text>
+    <text x="10" y="35" class="pattern-text">Line 44-49: match with all AppError variants</text>
+    <text x="10" y="50" class="pattern-text">Reasoning: Explicit handling of each error type enables appropriate</text>
+    <text x="10" y="65" class="pattern-text">recovery strategies. Compiler enforces exhaustiveness.</text>
+    <text x="10" y="80" class="confidence">Confidence: 91% (High)</text>
+  </g>
+  
+  <g transform="translate(20, 530)">
+    <rect class="decision-box" x="0" y="0" width="760" height="80" rx="5"/>
+    <text x="10" y="20" class="decision-text" font-weight="bold">Decision: Error Handling Strategy</text>
+    <text x="10" y="35" class="decision-text">Choice: ? operator for propagation, match for error discrimination</text>
+    <text x="10" y="50" class="decision-text">Alternatives: unwrap(), expect(), if let Ok(_), combinators (and_then, or_else)</text>
+    <text x="10" y="65" class="decision-text">Reasoning: ? enables clean control flow; match provides exhaustive error handling</text>
+  </g>
+</svg>

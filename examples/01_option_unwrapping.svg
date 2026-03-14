@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" width="800" height="520">
+  <style>
+    .title { font-family: 'Courier New', monospace; font-size: 18px; font-weight: bold; fill: #1a1a1a; }
+    .subtitle { font-family: 'Courier New', monospace; font-size: 12px; fill: #666; }
+    .pattern-box { fill: #c8e6c9; stroke: #1976d2; stroke-width: 2; }
+    .pattern-text { font-family: 'Courier New', monospace; font-size: 11px; fill: #1a1a1a; }
+    .confidence { font-family: 'Courier New', monospace; font-size: 10px; fill: #666; }
+    .decision-box { fill: #fff9c4; stroke: #f57c00; stroke-width: 2; }
+    .decision-text { font-family: 'Courier New', monospace; font-size: 11px; fill: #1a1a1a; }
+  </style>
+  
+  <text x="20" y="30" class="title">Pattern Analysis: Option Unwrapping</text>
+  <text x="20" y="50" class="subtitle">File: examples/01_option_unwrapping.rs</text>
+  <text x="20" y="65" class="subtitle">Patterns: 3 | Confidence: High</text>
+  
+  <g transform="translate(20, 90)">
+    <rect class="pattern-box" x="0" y="0" width="760" height="90" rx="5"/>
+    <text x="10" y="20" class="pattern-text" font-weight="bold">Pattern: Option&lt;T&gt; unwrapping with if let</text>
+    <text x="10" y="35" class="pattern-text">Line 8-11: if let Some(cfg) = config</text>
+    <text x="10" y="50" class="pattern-text">Reasoning: Idiomatic Option handling with early return pattern.</text>
+    <text x="10" y="65" class="pattern-text">Avoids unwrap() panics and provides clear control flow.</text>
+    <text x="10" y="80" class="confidence">Confidence: 88% (High)</text>
+  </g>
+  
+  <g transform="translate(20, 200)">
+    <rect class="pattern-box" x="0" y="0" width="760" height="90" rx="5"/>
+    <text x="10" y="20" class="pattern-text" font-weight="bold">Pattern: Exhaustive Option matching</text>
+    <text x="10" y="35" class="pattern-text">Line 17-21: match id with Some/None branches</text>
+    <text x="10" y="50" class="pattern-text">Reasoning: Match expression provides exhaustive handling of all</text>
+    <text x="10" y="65" class="pattern-text">Option variants. Compiler enforces coverage of Some and None cases.</text>
+    <text x="10" y="80" class="confidence">Confidence: 90% (High)</text>
+  </g>
+  
+  <g transform="translate(20, 310)">
+    <rect class="pattern-box" x="0" y="0" width="760" height="90" rx="5"/>
+    <text x="10" y="20" class="pattern-text" font-weight="bold">Pattern: Chained Option transformation</text>
+    <text x="10" y="35" class="pattern-text">Line 26-29: match find_user(id)</text>
+    <text x="10" y="50" class="pattern-text">Reasoning: Function composition with Option return type allows</text>
+    <text x="10" y="65" class="pattern-text">caller to handle success/failure. Common in functional Rust code.</text>
+    <text x="10" y="80" class="confidence">Confidence: 85% (High)</text>
+  </g>
+  
+  <g transform="translate(20, 420)">
+    <rect class="decision-box" x="0" y="0" width="760" height="80" rx="5"/>
+    <text x="10" y="20" class="decision-text" font-weight="bold">Decision: Control Flow Pattern</text>
+    <text x="10" y="35" class="decision-text">Choice: if let for simple unwrapping vs match for exhaustive handling</text>
+    <text x="10" y="50" class="decision-text">Alternatives: unwrap(), expect(), unwrap_or_default()</text>
+    <text x="10" y="65" class="decision-text">Reasoning: if let is ergonomic for single branch; match for multiple variants</text>
+  </g>
+</svg>

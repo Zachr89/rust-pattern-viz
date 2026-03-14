@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 630" width="800" height="630">
+  <style>
+    .title { font-family: 'Courier New', monospace; font-size: 18px; font-weight: bold; fill: #1a1a1a; }
+    .subtitle { font-family: 'Courier New', monospace; font-size: 12px; fill: #666; }
+    .pattern-box { fill: #c8e6c9; stroke: #1976d2; stroke-width: 2; }
+    .pattern-text { font-family: 'Courier New', monospace; font-size: 11px; fill: #1a1a1a; }
+    .confidence { font-family: 'Courier New', monospace; font-size: 10px; fill: #666; }
+    .decision-box { fill: #fff9c4; stroke: #f57c00; stroke-width: 2; }
+    .decision-text { font-family: 'Courier New', monospace; font-size: 11px; fill: #1a1a1a; }
+  </style>
+  
+  <text x="20" y="30" class="title">Pattern Analysis: Enum Matching</text>
+  <text x="20" y="50" class="subtitle">File: examples/04_enum_matching.rs</text>
+  <text x="20" y="65" class="subtitle">Patterns: 4 | Confidence: High</text>
+  
+  <g transform="translate(20, 90)">
+    <rect class="pattern-box" x="0" y="0" width="760" height="90" rx="5"/>
+    <text x="10" y="20" class="pattern-text" font-weight="bold">Pattern: Exhaustive enum matching</text>
+    <text x="10" y="35" class="pattern-text">Line 30-42: match msg with all Message variants</text>
+    <text x="10" y="50" class="pattern-text">Reasoning: Compiler-enforced exhaustiveness ensures all enum variants</text>
+    <text x="10" y="65" class="pattern-text">are handled. Prevents runtime errors from unhandled cases.</text>
+    <text x="10" y="80" class="confidence">Confidence: 93% (High)</text>
+  </g>
+  
+  <g transform="translate(20, 200)">
+    <rect class="pattern-box" x="0" y="0" width="760" height="90" rx="5"/>
+    <text x="10" y="20" class="pattern-text" font-weight="bold">Pattern: Match with return values</text>
+    <text x="10" y="35" class="pattern-text">Line 46-52: match event expression returns String</text>
+    <text x="10" y="50" class="pattern-text">Reasoning: Match is an expression, not a statement. Each arm returns</text>
+    <text x="10" y="65" class="pattern-text">a value, enabling functional-style enum transformation.</text>
+    <text x="10" y="80" class="confidence">Confidence: 91% (High)</text>
+  </g>
+  
+  <g transform="translate(20, 310)">
+    <rect class="pattern-box" x="0" y="0" width="760" height="105" rx="5"/>
+    <text x="10" y="20" class="pattern-text" font-weight="bold">Pattern: Match guards (if conditions)</text>
+    <text x="10" y="35" class="pattern-text">Line 57-71: PaymentMethod patterns with if guards</text>
+    <text x="10" y="50" class="pattern-text">Reasoning: Guards add runtime conditions to patterns. Enables complex</text>
+    <text x="10" y="65" class="pattern-text">validation logic while maintaining exhaustive matching. Patterns are</text>
+    <text x="10" y="80" class="pattern-text">checked in order, with guards evaluated after structural match.</text>
+    <text x="10" y="95" class="confidence">Confidence: 90% (High)</text>
+  </g>
+  
+  <g transform="translate(20, 435)">
+    <rect class="pattern-box" x="0" y="0" width="760" height="90" rx="5"/>
+    <text x="10" y="20" class="pattern-text" font-weight="bold">Pattern: matches! macro with wildcards</text>
+    <text x="10" y="35" class="pattern-text">Line 75-76: matches!(event, WebEvent::KeyPress(_) | WebEvent::Click{..})</text>
+    <text x="10" y="50" class="pattern-text">Reasoning: matches! macro provides boolean pattern matching without</text>
+    <text x="10" y="65" class="pattern-text">destructuring. Wildcards (_) match any value within variant.</text>
+    <text x="10" y="80" class="confidence">Confidence: 88% (High)</text>
+  </g>
+  
+  <g transform="translate(20, 545)">
+    <rect class="decision-box" x="0" y="0" width="760" height="65" rx="5"/>
+    <text x="10" y="20" class="decision-text" font-weight="bold">Decision: Enum Matching Strategy</text>
+    <text x="10" y="35" class="decision-text">Choice: Exhaustive match vs if let vs matches! macro</text>
+    <text x="10" y="50" class="decision-text">Alternatives: Visitor pattern, method dispatch, trait objects</text>
+  </g>
+</svg>

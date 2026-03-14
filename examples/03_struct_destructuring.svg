@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 740" width="800" height="740">
+  <style>
+    .title { font-family: 'Courier New', monospace; font-size: 18px; font-weight: bold; fill: #1a1a1a; }
+    .subtitle { font-family: 'Courier New', monospace; font-size: 12px; fill: #666; }
+    .pattern-box { fill: #c8e6c9; stroke: #1976d2; stroke-width: 2; }
+    .pattern-text { font-family: 'Courier New', monospace; font-size: 11px; fill: #1a1a1a; }
+    .confidence { font-family: 'Courier New', monospace; font-size: 10px; fill: #666; }
+    .decision-box { fill: #fff9c4; stroke: #f57c00; stroke-width: 2; }
+    .decision-text { font-family: 'Courier New', monospace; font-size: 11px; fill: #1a1a1a; }
+  </style>
+  
+  <text x="20" y="30" class="title">Pattern Analysis: Struct Destructuring</text>
+  <text x="20" y="50" class="subtitle">File: examples/03_struct_destructuring.rs</text>
+  <text x="20" y="65" class="subtitle">Patterns: 5 | Confidence: High</text>
+  
+  <g transform="translate(20, 90)">
+    <rect class="pattern-box" x="0" y="0" width="760" height="90" rx="5"/>
+    <text x="10" y="20" class="pattern-text" font-weight="bold">Pattern: Basic struct destructuring</text>
+    <text x="10" y="35" class="pattern-text">Line 23: let Point { x, y } = point</text>
+    <text x="10" y="50" class="pattern-text">Reasoning: Destructuring extracts fields directly into variables.</text>
+    <text x="10" y="65" class="pattern-text">More ergonomic than point.x and point.y for multiple field access.</text>
+    <text x="10" y="80" class="confidence">Confidence: 87% (High)</text>
+  </g>
+  
+  <g transform="translate(20, 200)">
+    <rect class="pattern-box" x="0" y="0" width="760" height="90" rx="5"/>
+    <text x="10" y="20" class="pattern-text" font-weight="bold">Pattern: Matching specific values</text>
+    <text x="10" y="35" class="pattern-text">Line 29-31: Point { x: 0, y: 0 } pattern</text>
+    <text x="10" y="50" class="pattern-text">Reasoning: Destructuring with literal values enables structural equality</text>
+    <text x="10" y="65" class="pattern-text">checks. Pattern matches only when both x and y equal 0.</text>
+    <text x="10" y="80" class="confidence">Confidence: 88% (High)</text>
+  </g>
+  
+  <g transform="translate(20, 310)">
+    <rect class="pattern-box" x="0" y="0" width="760" height="90" rx="5"/>
+    <text x="10" y="20" class="pattern-text" font-weight="bold">Pattern: Nested struct destructuring</text>
+    <text x="10" y="35" class="pattern-text">Line 37-40: Rectangle with nested Point destructuring</text>
+    <text x="10" y="50" class="pattern-text">Reasoning: Deep destructuring accesses nested fields in one expression.</text>
+    <text x="10" y="65" class="pattern-text">Eliminates intermediate variables for complex struct hierarchies.</text>
+    <text x="10" y="80" class="confidence">Confidence: 90% (High)</text>
+  </g>
+  
+  <g transform="translate(20, 420)">
+    <rect class="pattern-box" x="0" y="0" width="760" height="90" rx="5"/>
+    <text x="10" y="20" class="pattern-text" font-weight="bold">Pattern: Option field destructuring</text>
+    <text x="10" y="35" class="pattern-text">Line 48-54: Color with alpha: Some(a) vs alpha: None</text>
+    <text x="10" y="50" class="pattern-text">Reasoning: Destructuring Option fields enables direct matching on</text>
+    <text x="10" y="65" class="pattern-text">presence/absence of optional data within struct patterns.</text>
+    <text x="10" y="80" class="confidence">Confidence: 89% (High)</text>
+  </g>
+  
+  <g transform="translate(20, 530)">
+    <rect class="pattern-box" x="0" y="0" width="760" height="90" rx="5"/>
+    <text x="10" y="20" class="pattern-text" font-weight="bold">Pattern: Partial destructuring with ..</text>
+    <text x="10" y="35" class="pattern-text">Line 60-62: Point { x: 0, .. } ignores other fields</text>
+    <text x="10" y="50" class="pattern-text">Reasoning: .. wildcard ignores unneeded fields, focusing on</text>
+    <text x="10" y="65" class="pattern-text">specific conditions. Reduces noise in pattern matching code.</text>
+    <text x="10" y="80" class="confidence">Confidence: 86% (High)</text>
+  </g>
+  
+  <g transform="translate(20, 640)">
+    <rect class="decision-box" x="0" y="0" width="760" height="80" rx="5"/>
+    <text x="10" y="20" class="decision-text" font-weight="bold">Decision: Destructuring Strategy</text>
+    <text x="10" y="35" class="decision-text">Choice: Direct destructuring vs field access</text>
+    <text x="10" y="50" class="decision-text">Alternatives: point.x/point.y, ref patterns, mutable destructuring</text>
+    <text x="10" y="65" class="decision-text">Reasoning: Destructuring improves readability and prevents repeated field access</text>
+  </g>
+</svg>
