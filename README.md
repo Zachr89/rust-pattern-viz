@@ -1,22 +1,21 @@
 # rust-pattern-viz
 
-> Visualize AI code generation decision trees in Rust
+*Visualize AI code generation decision trees directly from your Rust source*
 
 ## What is this?
 
-`rust-pattern-viz` is a Rust-native CLI tool and library that makes AI copilot behavior transparent. It parses Rust source files with embedded AI suggestion metadata, extracts pattern matching logic, and generates interactive SVG/HTML visualizations showing what imports were considered, confidence scores per line, and the complete reasoning DAG. Perfect for code reviews, PR comments, and understanding why your AI assistant made specific suggestions.
+`rust-pattern-viz` is a Rust-native CLI tool and library that makes AI-assisted coding transparent. It parses Rust source files with embedded AI suggestion metadata, extracts pattern matching logic, and generates interactive SVG/HTML visualizations showing import considerations, per-line confidence scores, and the complete reasoning DAG. Essential for code reviews, PR documentation, and understanding how your AI copilot makes decisions.
 
 ## Features
 
-- **Parse AI metadata** from Rust source files with embedded suggestion comments
-- **Extract decision trees** showing confidence scores, alternative imports, and reasoning chains
-- **Generate interactive visualizations** as SVG, HTML, or both
-- **CLI tool** for quick analysis from the command line
-- **Library API** for embedding in your own tools
-- **LSP server** for real-time hover tooltips in VS Code
-- **Web demo** with WASM support for browser-based visualization
-- **Share server** for generating shareable visualization links
-- **VS Code extension** for in-editor AI decision inspection
+- **Source-to-Graph Parsing** – Extracts AI decision metadata directly from Rust comments
+- **Interactive SVG Export** – Generates standalone visualizations for web viewing
+- **Pattern Analysis** – Visualizes match statements, Option/Result flows, and error handling
+- **Confidence Scoring** – Shows AI certainty levels for each code suggestion
+- **LSP Integration** – Provides real-time hover tooltips in VS Code
+- **Web Demo** – Browser-based WASM visualization for easy sharing
+- **CLI Tool** – Batch process files or integrate into CI/CD pipelines
+- **Share Server** – Host and share visualizations with unique URLs
 
 ## Quick Start
 
@@ -27,50 +26,74 @@
 cargo install rust-pattern-viz
 
 # Or build from source
-git clone https://github.com/yourusername/rust-pattern-viz.git
+git clone https://github.com/yourusername/rust-pattern-viz
 cd rust-pattern-viz
 cargo build --release
 ```
 
-### Usage
-
-**CLI:**
+### Basic Usage
 
 ```bash
-# Analyze a Rust file and generate SVG
-rust-pattern-viz analyze examples/sample.rs --output decision-tree.svg
+# Generate SVG visualization
+rust-pattern-viz analyze examples/option_pattern.rs --output diagram.svg
 
-# Generate interactive HTML
-rust-pattern-viz analyze examples/sample.rs --format html --output viz.html
-
-# Start the web server for live visualization
+# Start web server for interactive viewing
 rust-pattern-viz serve --port 8080
+
+# Run LSP server for editor integration
+rust-pattern-viz lsp
 ```
 
-**Library:**
+## Usage Examples
+
+### CLI Visualization
+
+```bash
+# Analyze a single file
+rust-pattern-viz analyze src/lib.rs -o output/analysis.svg
+
+# Process multiple files
+rust-pattern-viz analyze examples/*.rs --output-dir diagrams/
+
+# Export as HTML with interactive features
+rust-pattern-viz analyze src/main.rs --format html -o report.html
+```
+
+### Library Usage
 
 ```rust
 use rust_pattern_viz::{Analyzer, SvgRenderer};
 
-fn main() {
-    // Parse a Rust file with AI metadata
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Parse source file
     let analyzer = Analyzer::new();
-    let decision_tree = analyzer.parse_file("src/main.rs").unwrap();
+    let patterns = analyzer.analyze_file("examples/option_pattern.rs")?;
     
-    // Generate SVG visualization
+    // Generate visualization
     let renderer = SvgRenderer::new();
-    let svg = renderer.render(&decision_tree);
-    std::fs::write("output.svg", svg).unwrap();
+    let svg = renderer.render(&patterns)?;
+    
+    std::fs::write("output.svg", svg)?;
+    Ok(())
 }
 ```
 
-**VS Code Extension:**
+### VS Code Integration
 
-1. Install the extension from `vscode-extension/`
-2. Hover over any line with AI metadata comments
-3. View confidence scores and alternative suggestions inline
+Install the VS Code extension to get inline visualizations:
 
-**Web Demo:**
+```bash
+cd vscode-extension
+npm install
+npm run compile
+code --install-extension rust-pattern-viz-*.vsix
+```
+
+Hover over pattern match expressions to see AI decision trees directly in your editor.
+
+### Web Demo
+
+Try the browser-based demo:
 
 ```bash
 cd web-demo
@@ -78,41 +101,23 @@ npm install
 npm run dev
 ```
 
-Visit `http://localhost:5173` to try the interactive browser-based visualizer.
+Open `http://localhost:5173` to visualize patterns without installing anything.
 
 ## Tech Stack
 
-- **Core**: Rust with `syn` for parsing, `serde` for serialization
-- **Visualization**: SVG generation with custom DAG layout algorithms
-- **CLI**: `clap` for argument parsing
-- **Web**: `axum` for HTTP server, WebAssembly (`wasm-bindgen`) for browser support
-- **LSP**: `tower-lsp` for VS Code integration
-- **Frontend**: TypeScript + React + Vite
-
-## Project Structure
-
-```
-rust-pattern-viz/
-├── src/
-│   ├── analyzer.rs       # Parse Rust files and extract metadata
-│   ├── models.rs         # Decision tree data structures
-│   ├── svg_renderer.rs   # Generate SVG visualizations
-│   ├── visualizer.rs     # High-level visualization API
-│   ├── lsp_server.rs     # Language Server Protocol implementation
-│   ├── web_server.rs     # HTTP server for live previews
-│   ├── share.rs          # Shareable link generation
-│   └── wasm.rs           # WebAssembly bindings
-├── vscode-extension/     # VS Code extension
-├── web-demo/             # Browser-based demo
-├── examples/             # Usage examples
-└── docs/                 # Documentation and demo materials
-```
+- **Core**: Rust 2021 edition with `syn` for parsing and `petgraph` for DAG generation
+- **Visualization**: SVG generation with `svg` crate, HTML templates via `askama`
+- **Web**: Actix-web for servers, WASM via `wasm-bindgen` for browser support
+- **Editor Integration**: LSP protocol implementation with `tower-lsp`
+- **Frontend**: TypeScript + React + Vite for web demo
+- **CI/CD**: GitHub Actions for testing and automated demo deployment
 
 ## Documentation
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) - System design and component overview
-- [CONTRIBUTING.md](CONTRIBUTING.md) - Development setup and guidelines
-- [docs/create-demo.md](docs/create-demo.md) - How to create demo visualizations
+- [Architecture Overview](ARCHITECTURE.md) – System design and module structure
+- [Contributing Guide](CONTRIBUTING.md) – How to contribute
+- [Demo Creation](docs/create-demo.md) – Recording visualizations
+- [Example Gallery](examples/) – Sample inputs and outputs
 
 ## License
 
@@ -120,4 +125,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**Built with ❤️ in Rust** | [Report Issues](https://github.com/yourusername/rust-pattern-viz/issues) | [Contribute](CONTRIBUTING.md)
+**Built for transparency in AI-assisted development.** Questions or feedback? Open an issue or start a discussion.

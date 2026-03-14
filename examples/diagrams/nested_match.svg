@@ -1,0 +1,92 @@
+<svg width="900" height="680" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .title { font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; font-size: 18px; font-weight: 600; fill: #1a1a1a; }
+      .section-title { font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; font-size: 14px; font-weight: 600; fill: #424242; }
+      .text { font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; font-size: 12px; fill: #333; }
+      .code { font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; font-size: 10px; fill: #1a1a1a; }
+      .confidence { font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; font-size: 11px; font-weight: 600; }
+      .high-conf { fill: #2e7d32; }
+      .pattern-box { fill: #fff9c4; stroke: #f57f17; stroke-width: 2; }
+      .decision-box { fill: #e1f5fe; stroke: #0277bd; stroke-width: 2; }
+      .admin-box { fill: #e8f5e9; stroke: #388e3c; stroke-width: 2; }
+      .user-box { fill: #fff3e0; stroke: #f57c00; stroke-width: 2; }
+      .guest-box { fill: #ffebee; stroke: #c62828; stroke-width: 2; }
+    </style>
+  </defs>
+  
+  <!-- Header -->
+  <rect width="900" height="60" fill="#f5f5f5"/>
+  <text x="20" y="35" class="title">Pattern Analysis: Nested Match with Permission System</text>
+  
+  <!-- Pattern Detection -->
+  <text x="20" y="90" class="section-title">📋 Detected Patterns</text>
+  
+  <rect x="20" y="100" width="860" height="80" class="pattern-box" rx="4"/>
+  <text x="35" y="125" class="text" font-weight="600">Multi-Level Nested Match (Permission × Command)</text>
+  <text x="35" y="145" class="code">Lines 13-34 | Confidence: </text>
+  <text x="230" y="145" class="confidence high-conf">88%</text>
+  <text x="35" y="165" class="text" font-size="11px">Outer match on Permission enum, inner match on Command enum</text>
+  <text x="35" y="180" class="text" font-size="11px">9 total decision branches with access control logic</text>
+  
+  <!-- Decision Tree Header -->
+  <text x="20" y="210" class="section-title">🌳 Permission-Based Decision Tree</text>
+  
+  <!-- Admin Branch -->
+  <rect x="20" y="230" width="270" height="150" class="admin-box" rx="4"/>
+  <text x="35" y="250" class="text" font-weight="600">Permission::Admin</text>
+  <text x="35" y="270" class="code">match cmd {</text>
+  <text x="50" y="290" class="code">Read { .. } → Ok(...)</text>
+  <text x="50" y="305" class="code">Write { .. } → Ok(...)</text>
+  <text x="50" y="320" class="code">Delete { .. } → Ok(...)</text>
+  <text x="35" y="340" class="code">}</text>
+  <text x="35" y="360" class="text" font-size="9px" fill="#388e3c">✓ All operations allowed</text>
+  
+  <!-- User Branch -->
+  <rect x="315" y="230" width="270" height="150" class="user-box" rx="4"/>
+  <text x="330" y="250" class="text" font-weight="600">Permission::User</text>
+  <text x="330" y="270" class="code">match cmd {</text>
+  <text x="345" y="290" class="code">Read { .. } → Ok(...)</text>
+  <text x="345" y="305" class="code">Write { .. } → Ok(...)</text>
+  <text x="345" y="320" class="code">Delete { .. } → Err("cannot delete")</text>
+  <text x="330" y="340" class="code">}</text>
+  <text x="330" y="360" class="text" font-size="9px" fill="#f57c00">⚠ Delete restricted</text>
+  
+  <!-- Guest Branch -->
+  <rect x="610" y="230" width="270" height="150" class="guest-box" rx="4"/>
+  <text x="625" y="250" class="text" font-weight="600">Permission::Guest</text>
+  <text x="625" y="270" class="code">match cmd {</text>
+  <text x="640" y="290" class="code">Read { .. } → Ok(...)</text>
+  <text x="640" y="305" class="code">Write { .. } → Err("cannot write")</text>
+  <text x="640" y="320" class="code">Delete { .. } → Err("cannot delete")</text>
+  <text x="625" y="340" class="code">}</text>
+  <text x="625" y="360" class="text" font-size="9px" fill="#c62828">✗ Write/Delete denied</text>
+  
+  <!-- Command Types -->
+  <text x="20" y="410" class="section-title">📝 Command Types</text>
+  
+  <rect x="20" y="420" width="860" height="100" class="decision-box" rx="4"/>
+  <text x="35" y="445" class="code" font-weight="600">Command::Read { path: String }</text>
+  <text x="320" y="445" class="text" font-size="10px">→ Allowed for all permission levels</text>
+  
+  <text x="35" y="470" class="code" font-weight="600">Command::Write { path: String, data: String }</text>
+  <text x="420" y="470" class="text" font-size="10px">→ Admin + User only</text>
+  
+  <text x="35" y="495" class="code" font-weight="600">Command::Delete { path: String }</text>
+  <text x="320" y="495" class="text" font-size="10px">→ Admin only</text>
+  
+  <!-- Statistics -->
+  <text x="20" y="550" class="section-title">📊 Pattern Statistics</text>
+  
+  <rect x="20" y="560" width="420" height="60" fill="#f5f5f5" stroke="#bdbdbd" stroke-width="1" rx="4"/>
+  <text x="35" y="585" class="text">Total branches: <tspan font-weight="600">9</tspan></text>
+  <text x="35" y="605" class="text">Nesting depth: <tspan font-weight="600">2 levels</tspan></text>
+  
+  <rect x="460" y="560" width="420" height="60" fill="#f5f5f5" stroke="#bdbdbd" stroke-width="1" rx="4"/>
+  <text x="475" y="585" class="text">Error cases: <tspan font-weight="600">5</tspan> (56% defensive)</text>
+  <text x="475" y="605" class="text">Success cases: <tspan font-weight="600">4</tspan></text>
+  
+  <!-- Metadata -->
+  <text x="20" y="650" class="text" fill="#757575" font-size="10px">Analysis Type: Nested Exhaustive Pattern Matching</text>
+  <text x="20" y="670" class="text" fill="#757575" font-size="10px">Pattern Complexity: High (3×3 decision matrix with access control)</text>
+</svg>
