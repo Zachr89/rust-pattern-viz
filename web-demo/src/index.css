@@ -1,0 +1,29 @@
+:root {
+  --rust-orange: #CE412B;
+  --rust-dark: #1a1a1a;
+  --rust-gray: #2d2d2d;
+  --rust-light: #f5f5f5;
+  --success-green: #4caf50;
+  --warning-yellow: #ff9800;
+  --error-red: #f44336;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--rust-dark);
+  color: var(--rust-light);
+}
+
+code {
+  font-family: 'Fira Code', 'Courier New', monospace;
+}

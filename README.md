@@ -1,21 +1,21 @@
 # rust-pattern-viz
 
-> Visualize AI code generation decision trees in interactive SVG/HTML
+*Visualize AI code generation decision trees in your Rust projects*
 
 ## What is this?
 
-`rust-pattern-viz` is a Rust-native CLI tool and library that makes AI-assisted coding transparent. It parses Rust source files with embedded AI suggestion metadata, extracts pattern matching logic, and generates interactive visualizations showing which imports were considered, confidence scores per line, and the complete reasoning DAG. Perfect for understanding how your AI copilot makes decisions during code reviews and PR discussions.
+`rust-pattern-viz` is a Rust-native CLI tool and library that makes AI-assisted coding transparent. It parses Rust source files with embedded AI suggestion metadata, extracts pattern matching logic, and generates interactive SVG/HTML visualizations showing what imports were considered, confidence scores per line, and the complete reasoning DAG. Perfect for understanding how AI copilots make decisions during code reviews and PRs.
 
 ## Features
 
-- **Parse AI metadata** — Extracts decision trees from specially-formatted comments in Rust source files
-- **Interactive visualizations** — Generates SVG/HTML outputs with clickable nodes and confidence indicators
-- **Confidence scoring** — See per-line confidence levels for AI suggestions
-- **Import analysis** — Visualize which dependencies were considered and why
-- **Reasoning DAG** — Full directed acyclic graph of AI decision-making process
-- **CLI & library** — Use standalone or integrate into your build pipeline
-- **LSP server** — Real-time visualization in compatible editors
-- **VSCode extension** — First-class integration with Visual Studio Code
+- **CLI & Library**: Use as a standalone tool or integrate into your Rust workflow
+- **Metadata Parsing**: Extracts AI decision metadata embedded in Rust source comments
+- **Interactive Visualizations**: Generates SVG/HTML outputs with clickable decision trees
+- **Confidence Scoring**: Shows per-line confidence levels for AI suggestions
+- **Reasoning DAG**: Visual graph of import considerations and pattern matching logic
+- **WASM Support**: Run in the browser via WebAssembly
+- **LSP Server**: Real-time analysis in your editor (VS Code extension included)
+- **Web Demo**: Try it instantly at your deployed demo URL
 
 ## Quick Start
 
@@ -33,80 +33,101 @@ cargo build --release
 
 ### Usage
 
+**Analyze a Rust file:**
+
 ```bash
-# Analyze a single file
-rust-pattern-viz analyze src/main.rs
+rust-pattern-viz analyze examples/sample.rs --output visualization.html
+```
 
-# Generate HTML visualization
-rust-pattern-viz visualize src/main.rs --output report.html
+**Run as LSP server:**
 
-# Start LSP server for editor integration
+```bash
 rust-pattern-viz lsp --port 9257
 ```
 
-### As a Library
+**As a library:**
 
 ```rust
 use rust_pattern_viz::{Analyzer, Visualizer};
 
 let analyzer = Analyzer::new();
-let patterns = analyzer.parse_file("src/main.rs")?;
-let visualizer = Visualizer::new();
-visualizer.render_svg(&patterns, "output.svg")?;
+let results = analyzer.parse_file("src/main.rs")?;
+let viz = Visualizer::new();
+viz.generate_html(&results, "output.html")?;
 ```
 
-### VSCode Extension
+## Try the Web Demo
 
-Install the extension from `vscode-extension/` directory:
+Visit the live demo to visualize AI decisions directly in your browser:
+
+1. Clone the repo and navigate to `web-demo/`
+2. Run `npm install && npm run dev`
+3. Open `http://localhost:5173`
+4. Paste Rust code with AI metadata or use the example snippets
+
+The web demo uses WASM bindings for native Rust performance in the browser.
+
+## VS Code Extension
+
+Install the companion extension for inline visualizations:
 
 ```bash
 cd vscode-extension
 npm install
-vsce package
-code --install-extension rust-pattern-viz-*.vsix
+npm run compile
+code --install-extension .
 ```
 
-Then open any Rust file with AI metadata comments and trigger the visualization command (`Ctrl+Shift+P` → "Visualize AI Patterns").
-
-## Example
-
-Given a Rust file with AI metadata:
-
-```rust
-// AI-SUGGESTION: import std::collections::HashMap [confidence: 0.92]
-// AI-ALTERNATIVE: import std::collections::BTreeMap [confidence: 0.73]
-use std::collections::HashMap;
-
-// AI-REASONING: HashMap chosen for O(1) lookup vs BTreeMap O(log n)
-fn process_data(data: Vec<String>) -> HashMap<String, i32> {
-    // ...
-}
-```
-
-Running `rust-pattern-viz visualize` produces an interactive HTML report showing:
-- The decision tree (HashMap vs BTreeMap)
-- Confidence scores (0.92 vs 0.73)
-- Reasoning explanations with clickable nodes
+Features:
+- Hover over AI-generated code to see confidence scores
+- Command palette: "Visualize AI Decisions"
+- Live updates as you edit
 
 ## Tech Stack
 
-- **Language**: Rust (2021 edition)
-- **Parsing**: `syn` for Rust AST analysis
-- **Visualization**: SVG generation with embedded JavaScript for interactivity
-- **LSP**: `tower-lsp` for Language Server Protocol implementation
-- **CLI**: `clap` for command-line argument parsing
-- **Testing**: Native Rust test framework with integration tests
+- **Core**: Rust with `syn` for parsing, `serde` for serialization
+- **Visualization**: SVG generation with `resvg`, HTML templating
+- **WASM**: `wasm-bindgen` for browser compatibility
+- **Web Demo**: Vite + React + TypeScript
+- **LSP**: `tower-lsp` for editor integration
+- **CI/CD**: GitHub Actions for testing and demo deployment
+
+## Project Structure
+
+```
+rust-pattern-viz/
+├── src/
+│   ├── analyzer.rs      # Metadata extraction logic
+│   ├── visualizer.rs    # SVG/HTML generation
+│   ├── models.rs        # Data structures
+│   ├── lsp_server.rs    # Language server protocol
+│   ├── wasm.rs          # WebAssembly bindings
+│   └── main.rs          # CLI entrypoint
+├── web-demo/            # Browser-based demo (React)
+├── vscode-extension/    # VS Code integration
+├── examples/            # Sample Rust files with metadata
+└── tests/               # Integration tests
+```
 
 ## Documentation
 
-- [Architecture](ARCHITECTURE.md) — System design and component overview
-- [Contributing](CONTRIBUTING.md) — Development setup and guidelines
-- [Demo Recording](DEMO_RECORDING.md) — Video walkthrough of key features
-- [Examples](examples/) — Sample Rust files with AI metadata
+- **[ARCHITECTURE.md](ARCHITECTURE.md)**: Technical design and implementation details
+- **[CONTRIBUTING.md](CONTRIBUTING.md)**: How to contribute to the project
+- **[DEMO_RECORDING.md](DEMO_RECORDING.md)**: Recording usage examples
 
-## Contributing
+## Use Cases
 
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, coding standards, and PR guidelines.
+- **Code Reviews**: Understand why AI suggested specific imports or patterns
+- **PR Comments**: Attach decision tree visualizations to pull requests
+- **Learning**: See how AI copilots reason about code context
+- **Debugging**: Identify low-confidence suggestions that need human review
+- **Team Alignment**: Share AI reasoning with teammates unfamiliar with copilot tools
+
+## Requirements
+
+- Rust 1.70+ (for CLI/library)
+- Node.js 18+ (for web demo and VS Code extension)
+- Modern browser with WASM support (for web demo)
 
 ## License
 
@@ -114,4 +135,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-Built with ❤️ for developers who want to understand their AI coding assistants.
+**Built with Rust.** Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.

@@ -2,12 +2,17 @@
 name = "rust-pattern-viz"
 version = "0.1.0"
 edition = "2021"
-authors = ["Developer <dev@example.com>"]
-description = "Visualize AI-generated Rust code patterns and decision trees"
-license = "MIT"
+authors = ["Rust Pattern Viz Contributors"]
+description = "Rust-native CLI tool and library that visualizes AI code generation decision trees"
+license = "MIT OR Apache-2.0"
 repository = "https://github.com/yourusername/rust-pattern-viz"
-keywords = ["rust", "ai", "visualization", "code-analysis", "developer-tools"]
+keywords = ["rust", "visualization", "analysis", "patterns"]
 categories = ["development-tools", "visualization"]
+
+[lib]
+name = "rust_pattern_viz"
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
 
 [[bin]]
 name = "rpv"
@@ -18,23 +23,37 @@ name = "rpv-lsp"
 path = "src/lsp_server.rs"
 
 [dependencies]
-syn = { version = "2.0", features = ["full", "parsing", "extra-traits"] }
+syn = { version = "2.0", features = ["full", "visit", "extra-traits"] }
 quote = "1.0"
-proc-macro2 = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-clap = { version = "4.5", features = ["derive", "color"] }
-anyhow = "1.0"
-colored = "2.1"
-askama = "0.12"
-regex = "1.10"
-walkdir = "2.5"
-sha2 = "0.10"
-tower-lsp = "0.20"
-tokio = { version = "1.36", features = ["full"] }
 chrono = "0.4"
+clap = { version = "4.4", features = ["derive"] }
+anyhow = "1.0"
+thiserror = "1.0"
+
+# LSP dependencies
+tower-lsp = { version = "0.20", optional = true }
+tokio = { version = "1.35", features = ["full"], optional = true }
+
+# WASM dependencies
+wasm-bindgen = { version = "0.2", optional = true }
+console_error_panic_hook = { version = "0.1", optional = true }
+wee_alloc = { version = "0.4", optional = true }
 
 [dev-dependencies]
-tempfile = "3.10"
-assert_cmd = "2.0"
-predicates = "3.1"
+criterion = "0.5"
+
+[features]
+default = ["cli"]
+cli = []
+lsp = ["tower-lsp", "tokio"]
+wasm = ["wasm-bindgen", "console_error_panic_hook", "wee_alloc"]
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+
+[profile.release.package.rust-pattern-viz]
+opt-level = "s"  # Optimize for size in WASM builds
