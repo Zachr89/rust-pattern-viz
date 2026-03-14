@@ -1,33 +1,31 @@
 # rust-pattern-viz
 
-**Visualize AI code generation decision trees and pattern matching logic in Rust**
+> Visualize AI code generation decision trees directly from your Rust source code
 
 ## What is this?
 
-`rust-pattern-viz` is a Rust-native CLI tool and library that makes AI-assisted coding transparent. It parses Rust source files containing embedded AI suggestion metadata, extracts pattern matching logic, and generates interactive SVG/HTML visualizations showing import considerations, per-line confidence scores, and reasoning DAGs. Whether you're reviewing AI-generated code, adding visualizations to PR comments, or debugging copilot behavior, this tool provides instant insight into how AI models make decisions.
+`rust-pattern-viz` is a Rust-native CLI tool and library that makes AI copilot suggestions transparent and reviewable. It parses Rust source files with embedded AI metadata, extracts pattern matching logic and decision trees, then generates interactive SVG/HTML visualizations showing confidence scores, import alternatives, and reasoning graphs. Perfect for code reviews, PR comments, and understanding what your AI assistant was actually thinking.
 
 ## Features
 
-- **🔍 AI Decision Analysis** – Extracts and visualizes AI suggestion metadata from Rust source files
-- **📊 Interactive Visualizations** – Generates SVG/HTML diagrams showing decision trees and reasoning flows
-- **🎯 Confidence Scoring** – Display per-line confidence metrics for AI-generated suggestions
-- **🌐 Web Demo** – Browser-based interface for exploring examples without installation
-- **🔌 VS Code Extension** – Inline visualization panels with hover tooltips and real-time updates
-- **🚀 LSP Server** – Language server integration for IDE support across editors
-- **📦 WASM Support** – Run the analyzer client-side in web applications
-- **🎨 Pattern Matching Focus** – Deep analysis of Rust's pattern matching constructs (match, if-let, destructuring)
-- **📤 Export Formats** – SVG, HTML, and shareable links for team collaboration
-- **⚡ Zero Config** – Works out-of-the-box with sensible defaults
+- **Native Rust analyzer** - Fast parsing of Rust source with AI suggestion metadata
+- **Interactive visualizations** - SVG and HTML output with confidence scores per line
+- **Decision tree DAGs** - See the full reasoning chain for each suggestion
+- **Import analysis** - Visualize which imports were considered and why others were rejected
+- **Multiple output formats** - CLI tool, library API, VSCode extension, web demo
+- **Shareable diagrams** - Generate embeddable visualizations for PR comments and documentation
+- **LSP integration** - Real-time visualization in your editor
+- **WASM support** - Run in the browser for zero-install demos
 
 ## Quick Start
 
 ### Installation
 
 ```bash
-# Install via cargo
+# Install from crates.io
 cargo install rust-pattern-viz
 
-# Or clone and build from source
+# Or build from source
 git clone https://github.com/yourusername/rust-pattern-viz.git
 cd rust-pattern-viz
 cargo build --release
@@ -36,136 +34,108 @@ cargo build --release
 ### Basic Usage
 
 ```bash
-# Analyze a Rust file and generate an SVG visualization
-rust-pattern-viz analyze src/main.rs --output decision-tree.svg
+# Analyze a single file
+rust-pattern-viz analyze src/main.rs
 
-# Start interactive web server on localhost:3000
-rust-pattern-viz serve --port 3000
+# Generate SVG visualization
+rust-pattern-viz visualize src/main.rs -o output.svg
 
-# Start LSP server for editor integration
+# Start interactive web server
+rust-pattern-viz serve --port 8080
+
+# Run LSP server for editor integration
 rust-pattern-viz lsp
 ```
-
-### VS Code Extension
-
-1. Open Extensions panel (`Ctrl+Shift+X` or `Cmd+Shift+X`)
-2. Search for "Rust Pattern Viz"
-3. Click Install
-4. Open any `.rs` file and hover over pattern matches to see visualizations
 
 ## Usage Examples
 
 ### CLI Analysis
 
-```rust
-// example.rs with AI metadata comments
-fn process_result(value: Result<i32, String>) -> i32 {
-    // @ai-suggestion: confidence=0.92, alternatives=["unwrap_or_default", "expect"]
-    match value {
-        Ok(n) => n,
-        Err(_) => 0,
-    }
-}
-```
-
 ```bash
-rust-pattern-viz analyze example.rs --format html --open
+# Analyze with detailed output
+rust-pattern-viz analyze examples/pattern_match.rs --verbose
+
+# Export to multiple formats
+rust-pattern-viz visualize src/lib.rs \
+  --format svg,html,json \
+  --output-dir ./visualizations
 ```
 
-### Library Integration
+### Library API
 
 ```rust
-use rust_pattern_viz::{Analyzer, SvgRenderer};
+use rust_pattern_viz::{Analyzer, Visualizer};
 
 fn main() {
-    let source = std::fs::read_to_string("src/main.rs").unwrap();
+    // Parse source file
     let analyzer = Analyzer::new();
-    let patterns = analyzer.extract_patterns(&source).unwrap();
+    let patterns = analyzer.analyze_file("src/main.rs")?;
     
-    let renderer = SvgRenderer::new();
-    let svg = renderer.render(&patterns);
-    std::fs::write("output.svg", svg).unwrap();
+    // Generate visualization
+    let visualizer = Visualizer::new();
+    let svg = visualizer.render_svg(&patterns)?;
+    
+    std::fs::write("output.svg", svg)?;
 }
 ```
+
+### VSCode Extension
+
+Install from the Extensions marketplace or manually:
+
+```bash
+cd vscode-extension
+npm install
+npm run compile
+code --install-extension rust-pattern-viz-*.vsix
+```
+
+Hover over any pattern match to see inline decision trees.
 
 ### Web Demo
 
-Visit the [live demo](https://your-username.github.io/rust-pattern-viz) to try examples in your browser:
-
-- Option/Result unwrapping strategies
-- Enum matching with confidence scores
-- Nested pattern alternatives
-- Struct destructuring decisions
-
-### Share Server
-
-Start a server to generate shareable links:
+Try it live at [your-demo-url.com] or run locally:
 
 ```bash
-# Start share server
-rust-pattern-viz share-server --host 0.0.0.0 --port 8080
-
-# Generate shareable link
-curl -X POST http://localhost:8080/share \
-  -H "Content-Type: application/json" \
-  -d '{"code": "fn main() { ... }", "metadata": {...}}'
+cd web-demo
+npm install
+npm run dev
 ```
 
 ## Tech Stack
 
-**Core**
-- Rust (CLI, library, analysis engine)
-- `syn` – Rust AST parsing
-- `quote` – Code generation
-- `serde` – Serialization/deserialization
-
-**Visualization**
-- SVG generation with custom renderer
-- HTML templates with embedded interactivity
-- CSS for styling decision trees
-
-**Web Components**
-- TypeScript (VS Code extension)
-- Vite + React (web demo)
-- WebAssembly (browser runtime via `wasm-bindgen`)
-
-**Infrastructure**
-- GitHub Actions (CI/CD)
-- Docker (optional deployment)
-- LSP protocol for editor integration
-
-## Project Structure
-
-```
-rust-pattern-viz/
-├── src/               # Core library and CLI
-├── examples/          # Sample visualizations
-├── vscode-extension/  # VS Code integration
-├── web-demo/          # Browser-based demo
-├── wasm/              # WebAssembly bindings
-└── docs/              # Documentation
-```
+- **Core**: Rust 2021 edition with `syn` for AST parsing
+- **Visualization**: SVG generation with `svg` crate, HTML templates
+- **LSP**: `tower-lsp` for editor integration
+- **Web**: Axum web server, WASM with `wasm-bindgen`
+- **VSCode Extension**: TypeScript + VS Code Extension API
+- **Web Demo**: Vite + TypeScript + React
+- **CI/CD**: GitHub Actions for testing and deployment
 
 ## Documentation
 
 - [Architecture Overview](ARCHITECTURE.md)
 - [Contributing Guide](CONTRIBUTING.md)
-- [VS Code Extension Guide](docs/VSCODE_EXTENSION.md)
-- [Creating Demo Content](DEMO_CREATION.md)
-- [Examples Gallery](examples/README.md)
+- [VSCode Extension Docs](docs/VSCODE_EXTENSION.md)
+- [Example Gallery](examples/README.md)
+- [Demo Recording Guide](demo/RECORDING_GUIDE.md)
 
-## Contributing
+## Examples
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
-- Development setup
-- Code style guidelines
-- Testing requirements
-- PR submission process
+Check out the [examples/](examples/) directory for annotated samples:
+
+- `01_option_unwrapping.rs` - Basic Option pattern analysis
+- `02_result_error_handling.rs` - Error handling decision trees
+- `03_struct_destructuring.rs` - Complex destructuring patterns
+- `04_enum_matching.rs` - Enum variant confidence scores
+- `05_nested_patterns.rs` - Multi-level pattern matching
+
+Each example includes corresponding `.svg` output showing the visualization.
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-**Built with ❤️ for the Rust and AI communities**
+**Built with ❤️ for developers who want to understand their AI copilots**
