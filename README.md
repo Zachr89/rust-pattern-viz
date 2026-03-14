@@ -1,30 +1,32 @@
 # rust-pattern-viz
 
-**Make AI code generation decisions visible.**
+> Make AI code generation transparent with interactive decision tree visualizations
 
 ## What is this?
 
-`rust-pattern-viz` is a Rust-native CLI tool and library that transforms opaque AI code suggestions into transparent, visual decision trees. It parses Rust source files with embedded AI metadata, extracts pattern matching logic, and generates interactive SVG/HTML visualizations that show which imports were considered, confidence scores per line, and the complete reasoning DAG. Built for developers who want to understand and validate AI copilot behavior during code reviews.
+`rust-pattern-viz` is a Rust-native CLI tool and library that visualizes the decision-making process behind AI-generated code. It parses Rust source files containing embedded AI suggestion metadata, extracts pattern matching logic, and generates interactive SVG/HTML visualizations that show what imports were considered, confidence scores per line, and the complete reasoning DAG. Think of it as an X-ray machine for AI copilot behavior—perfect for code reviews, PR comments, and building trust in AI-assisted development.
 
 ## Features
 
-- **Decision Tree Extraction** – Parses AI suggestion metadata from Rust source files
-- **Pattern Analysis** – Identifies import decisions, rejected alternatives, and confidence scores
-- **Interactive Visualizations** – Generates SVG and HTML reports showing reasoning DAGs
-- **PR-Ready Output** – Export visualizations for GitHub PR comments and code reviews
-- **Library + CLI** – Use as a standalone tool or integrate into your Rust projects
-- **Local Processing** – All analysis happens on your machine—no cloud uploads
-- **Fast & Lightweight** – Single binary with minimal dependencies
+- **Decision Tree Visualization** - See the complete reasoning path: what the AI considered, rejected, and why
+- **Confidence Heatmaps** - Line-by-line confidence scores for AI-generated code
+- **Import Analysis** - Track which imports were evaluated and the rationale behind selections
+- **Interactive Reports** - Export to SVG/HTML for embedding in PRs and documentation
+- **Rust-Native Performance** - Fast parsing with `tree-sitter` and zero-overhead abstractions
+- **Local-First** - All processing happens on your machine—no cloud uploads required
+- **CLI & Library** - Use as a standalone tool or integrate into your Rust projects
 
 ## Quick Start
 
 ### Installation
 
 ```bash
-# Install from crates.io
 cargo install rust-pattern-viz
+```
 
-# Or build from source
+Or build from source:
+
+```bash
 git clone https://github.com/yourusername/rust-pattern-viz.git
 cd rust-pattern-viz
 cargo build --release
@@ -32,95 +34,77 @@ cargo build --release
 
 ### Basic Usage
 
-```bash
-# Analyze a single file
-rust-pattern-viz analyze src/main.rs
-
-# Generate HTML report
-rust-pattern-viz analyze src/main.rs --output report.html
-
-# Generate SVG decision tree
-rust-pattern-viz analyze src/main.rs --format svg --output tree.svg
-
-# Analyze entire project
-rust-pattern-viz analyze src/ --recursive
-```
-
-## Usage Examples
-
-### CLI Analysis
+**Analyze a single file:**
 
 ```bash
-# Analyze AI-generated code with confidence thresholds
-rust-pattern-viz analyze ai_generated.rs --min-confidence 0.7
-
-# Export for PR comments
-rust-pattern-viz analyze src/lib.rs --format html --output pr-comment.html
+rust-pattern-viz analyze examples/sample.rs --output report.html
 ```
 
-### Library Integration
+**Generate an SVG decision tree:**
+
+```bash
+rust-pattern-viz visualize src/main.rs --format svg --output decision-tree.svg
+```
+
+**Use as a library:**
 
 ```rust
 use rust_pattern_viz::{Analyzer, Visualizer};
 
-fn main() {
-    // Parse source file
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let analyzer = Analyzer::new();
-    let decisions = analyzer.parse_file("src/main.rs")?;
+    let patterns = analyzer.parse_file("src/main.rs")?;
     
-    // Generate visualization
     let visualizer = Visualizer::new();
-    visualizer.render_html(&decisions, "output.html")?;
+    visualizer.generate_html(&patterns, "report.html")?;
     
-    // Access decision metadata
-    for decision in decisions.iter() {
-        println!("Line {}: confidence {}", 
-                 decision.line, 
-                 decision.confidence);
-    }
+    Ok(())
 }
 ```
 
-### Example Output
+## Usage Examples
 
-The tool generates interactive visualizations showing:
-- **Import candidates** considered by the AI
-- **Confidence scores** for each suggestion (0.0 - 1.0)
-- **Pattern matches** that influenced decisions
-- **Alternative paths** that were rejected
-- **Reasoning chains** from input to output
+### Code Review Workflow
 
-See `examples/sample.rs` for annotated source files.
+```bash
+# Analyze AI-generated code before committing
+rust-pattern-viz analyze src/new_feature.rs --output review.html
+
+# Open the interactive report
+open review.html
+```
+
+### CI/CD Integration
+
+Add to your `.github/workflows/ci.yml`:
+
+```yaml
+- name: Visualize AI patterns
+  run: |
+    cargo install rust-pattern-viz
+    rust-pattern-viz analyze src/ --output pattern-report.html
+    
+- name: Upload visualization
+  uses: actions/upload-artifact@v3
+  with:
+    name: ai-pattern-report
+    path: pattern-report.html
+```
+
+### Batch Analysis
+
+```bash
+# Analyze all Rust files in a directory
+find src -name "*.rs" -exec rust-pattern-viz analyze {} --output reports/{}.html \;
+```
 
 ## Tech Stack
 
-- **Rust** – Core analysis engine and CLI
-- **tree-sitter** – Robust Rust source parsing
-- **SVG/HTML Templates** – Portable visualization output
-- **Serde** – Metadata serialization
-- **Clap** – Command-line interface
-
-## CI/CD
-
-GitHub Actions workflow included for:
-- Automated testing on push
-- Multi-platform builds (Linux, macOS, Windows)
-- Cargo fmt and clippy checks
-
-## Contributing
-
-Contributions welcome! Please open an issue before starting major work.
-
-```bash
-# Run tests
-cargo test
-
-# Format code
-cargo fmt
-
-# Lint
-cargo clippy
-```
+- **Language:** Rust (2021 edition)
+- **Parser:** [tree-sitter](https://tree-sitter.github.io/) for syntax analysis
+- **Visualization:** SVG generation with embedded interactive JavaScript
+- **CLI Framework:** `clap` for command-line argument parsing
+- **Testing:** Built-in Rust test framework with integration tests
 
 ## License
 
@@ -128,4 +112,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**Built for developers who demand transparency in AI-assisted coding.**
+**Contributing:** Issues and pull requests welcome! See our [CI workflow](.github/workflows/ci.yml) for testing requirements.
