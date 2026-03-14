@@ -1,81 +1,96 @@
 {
   "name": "rust-pattern-viz",
   "displayName": "Rust Pattern Visualizer",
-  "description": "Visualize Rust code patterns and AI decision trees",
+  "description": "Generate interactive pattern diagrams on hover - visualize error handling, iterators, and control flow",
   "version": "0.1.0",
   "publisher": "rust-pattern-viz",
+  "icon": "icon.png",
   "engines": {
-    "vscode": "^1.85.0"
+    "vscode": "^1.75.0"
   },
   "categories": [
     "Programming Languages",
-    "Visualization"
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "rust",
+    "visualization",
+    "patterns",
+    "diagrams",
+    "analysis"
   ],
   "activationEvents": [
     "onLanguage:rust"
   ],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "rustPatternViz.restartServer",
-        "title": "Rust Pattern Viz: Restart LSP Server"
-      },
-      {
-        "command": "rustPatternViz.shareAnalysis",
-        "title": "Rust Pattern Viz: Share Current Analysis"
-      }
-    ],
-    "menus": {
-      "editor/context": [
-        {
-          "command": "rustPatternViz.shareAnalysis",
-          "when": "editorLangId == rust",
-          "group": "rust-pattern-viz"
-        }
-      ]
-    },
     "configuration": {
       "title": "Rust Pattern Visualizer",
       "properties": {
-        "rustPatternViz.serverPath": {
+        "rustPatternViz.cliPath": {
           "type": "string",
           "default": "",
-          "description": "Path to rpv-lsp binary. Leave empty for auto-detection."
+          "description": "Path to rpv CLI tool (leave empty for auto-detect)"
         },
-        "rustPatternViz.trace.server": {
-          "type": "string",
-          "enum": [
-            "off",
-            "messages",
-            "verbose"
-          ],
-          "default": "off",
-          "description": "Traces communication between VS Code and the LSP server."
+        "rustPatternViz.enableHover": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable hover diagrams (Pro feature preview)"
         },
-        "rustPatternViz.shareServerUrl": {
-          "type": "string",
-          "default": "http://localhost:3030",
-          "description": "URL of the share server for generating shareable links."
+        "rustPatternViz.maxDiagramSize": {
+          "type": "number",
+          "default": 5000,
+          "description": "Maximum diagram height in pixels"
         }
       }
-    }
+    },
+    "commands": [
+      {
+        "command": "rustPatternViz.generateDiagram",
+        "title": "Rust Pattern Viz: Generate Diagram for Current File"
+      },
+      {
+        "command": "rustPatternViz.openSettings",
+        "title": "Rust Pattern Viz: Open Settings"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "lint": "eslint src --ext ts"
+    "pretest": "npm run compile",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "publish": "vsce publish"
   },
   "devDependencies": {
-    "@types/node": "^20.10.0",
-    "@types/vscode": "^1.85.0",
-    "@typescript-eslint/eslint-plugin": "^6.13.0",
-    "@typescript-eslint/parser": "^6.13.0",
-    "eslint": "^8.54.0",
-    "typescript": "^5.3.0"
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.75.0",
+    "@vscode/test-electron": "^2.3.0",
+    "typescript": "^5.0.0",
+    "@vscode/vsce": "^2.22.0"
   },
-  "dependencies": {
-    "vscode-languageclient": "^9.0.1"
-  }
+  "dependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/rust-pattern-viz"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/rust-pattern-viz/issues"
+  },
+  "license": "MIT",
+  "preview": true,
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "badges": [
+    {
+      "url": "https://img.shields.io/badge/status-beta-yellow",
+      "href": "https://github.com/yourusername/rust-pattern-viz",
+      "description": "Beta Release"
+    }
+  ]
 }

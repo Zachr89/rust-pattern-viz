@@ -1,208 +1,252 @@
-import * as path from 'path';
 import * as vscode from 'vscode';
-import {
-    LanguageClient,
-    LanguageClientOptions,
-    ServerOptions,
-} from 'vscode-languageclient/node';
+import * as path from 'path';
 import * as fs from 'fs';
-import * as child_process from 'child_process';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
-let client: LanguageClient | undefined;
+const execAsync = promisify(exec);
 
-export async function activate(context: vscode.ExtensionContext) {
-    console.log('Rust Pattern Viz extension activating...');
+let outputChannel: vscode.OutputChannel;
 
-    const serverPath = await findServerBinary();
-    if (!serverPath) {
-        vscode.window.showErrorMessage(
-            'Could not find rpv-lsp binary. Please build it with `cargo build --bin rpv-lsp` or set rustPatternViz.serverPath.'
-        );
-        return;
+export function activate(context: vscode.ExtensionContext) {
+    outputChannel = vscode.window.createOutputChannel('Rust Pattern Viz');
+    outputChannel.appendLine('Rust Pattern Visualizer extension activated');
+
+    // Register hover provider for Rust files
+    const hoverProvider = vscode.languages.registerHoverProvider('rust', {
+        provideHover(document, position, token) {
+            return providePatternHover(document, position);
+        }
+    });
+
+    // Register command to generate diagram for current file
+    const generateCommand = vscode.commands.registerCommand(
+        'rustPatternViz.generateDiagram',
+        async () => {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor || editor.document.languageId !== 'rust') {
+                vscode.window.showWarningMessage('Please open a Rust file first');
+                return;
+            }
+
+            await generateAndShowDiagram(editor.document);
+        }
+    );
+
+    // Register settings command
+    const settingsCommand = vscode.commands.registerCommand(
+        'rustPatternViz.openSettings',
+        () => {
+            vscode.commands.executeCommand('workbench.action.openSettings', 'rustPatternViz');
+        }
+    );
+
+    context.subscriptions.push(hoverProvider, generateCommand, settingsCommand, outputChannel);
+
+    // Show welcome message for beta
+    vscode.window.showInformationMessage(
+        'Rust Pattern Viz (Beta): Hover over functions to see pattern diagrams. Pro version with enhanced features coming soon!',
+        'Learn More'
+    ).then(selection => {
+        if (selection === 'Learn More') {
+            vscode.env.openExternal(vscode.Uri.parse('https://github.com/yourusername/rust-pattern-viz'));
+        }
+    });
+}
+
+async function providePatternHover(
+    document: vscode.TextDocument,
+    position: vscode.Position
+): Promise<vscode.Hover | null> {
+    const config = vscode.workspace.getConfiguration('rustPatternViz');
+    
+    if (!config.get<boolean>('enableHover', true)) {
+        return null;
     }
 
-    console.log('Found rpv-lsp at:', serverPath);
-
-    const serverOptions: ServerOptions = {
-        command: serverPath,
-        args: [],
-    };
-
-    const clientOptions: LanguageClientOptions = {
-        documentSelector: [{ scheme: 'file', language: 'rust' }],
-        synchronize: {
-            fileEvents: vscode.workspace.createFileSystemWatcher('**/*.rs'),
-        },
-    };
-
-    client = new LanguageClient(
-        'rustPatternViz',
-        'Rust Pattern Visualizer',
-        serverOptions,
-        clientOptions
-    );
+    // Check if we're hovering over a function, impl, or struct keyword
+    const line = document.lineAt(position.line);
+    const text = line.text;
+    
+    const relevantKeywords = ['fn ', 'impl ', 'struct ', 'enum ', 'trait '];
+    const isRelevant = relevantKeywords.some(kw => text.includes(kw));
+    
+    if (!isRelevant) {
+        return null;
+    }
 
     try {
-        await client.start();
-        console.log('Rust Pattern Viz LSP server started successfully');
+        const cliPath = await findCliPath(config);
+        const filePath = document.uri.fsPath;
+        
+        outputChannel.appendLine(`Analyzing ${filePath} at line ${position.line + 1}`);
+
+        // Generate SVG diagram using CLI
+        const svgContent = await generateSvgDiagram(cliPath, filePath);
+        
+        if (!svgContent) {
+            return null;
+        }
+
+        // Encode SVG as base64 for embedding in Markdown
+        const base64Svg = Buffer.from(svgContent).toString('base64');
+        const imageUri = `data:image/svg+xml;base64,${base64Svg}`;
+
+        const markdown = new vscode.MarkdownString();
+        markdown.isTrusted = true;
+        markdown.supportHtml = true;
+
+        markdown.appendMarkdown(`### 🦀 Pattern Analysis\n\n`);
+        markdown.appendMarkdown(`![Pattern Diagram](${imageUri})\n\n`);
+        markdown.appendMarkdown(`---\n\n`);
+        markdown.appendMarkdown(`*Generated by Rust Pattern Viz* | `);
+        markdown.appendMarkdown(`[⚙️ Settings](command:rustPatternViz.openSettings) | `);
+        markdown.appendMarkdown(`[📊 Full Diagram](command:rustPatternViz.generateDiagram)\n\n`);
+        markdown.appendMarkdown(`**🎯 Pro Version Coming Soon**: Enhanced diagrams, real-time updates, and team collaboration features`);
+
+        return new vscode.Hover(markdown);
+
     } catch (error) {
-        console.error('Failed to start LSP server:', error);
-        vscode.window.showErrorMessage(
-            `Failed to start Rust Pattern Viz LSP server: ${error}`
-        );
-        return;
+        outputChannel.appendLine(`Error generating hover: ${error}`);
+        return null;
     }
-
-    // Register restart command
-    context.subscriptions.push(
-        vscode.commands.registerCommand('rustPatternViz.restartServer', async () => {
-            if (client) {
-                await client.stop();
-                await client.start();
-                vscode.window.showInformationMessage('Rust Pattern Viz server restarted');
-            }
-        })
-    );
-
-    // Register share analysis command
-    context.subscriptions.push(
-        vscode.commands.registerCommand('rustPatternViz.shareAnalysis', async () => {
-            await shareCurrentAnalysis();
-        })
-    );
-
-    console.log('Rust Pattern Viz extension activated');
 }
 
-export function deactivate(): Thenable<void> | undefined {
-    if (!client) {
-        return undefined;
-    }
-    return client.stop();
-}
-
-async function findServerBinary(): Promise<string | undefined> {
-    // 1. Check user configuration
+async function generateAndShowDiagram(document: vscode.TextDocument): Promise<void> {
     const config = vscode.workspace.getConfiguration('rustPatternViz');
-    const configPath = config.get<string>('serverPath');
-    if (configPath && fs.existsSync(configPath)) {
-        return configPath;
+    
+    try {
+        const cliPath = await findCliPath(config);
+        const filePath = document.uri.fsPath;
+        
+        vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: "Generating pattern diagram...",
+            cancellable: false
+        }, async (progress) => {
+            const svgContent = await generateSvgDiagram(cliPath, filePath);
+            
+            if (!svgContent) {
+                vscode.window.showErrorMessage('Failed to generate diagram');
+                return;
+            }
+
+            // Save SVG to temp file and open
+            const outputPath = path.join(
+                path.dirname(filePath),
+                `${path.basename(filePath, '.rs')}_pattern_diagram.svg`
+            );
+            
+            fs.writeFileSync(outputPath, svgContent);
+            
+            const doc = await vscode.workspace.openTextDocument(outputPath);
+            await vscode.window.showTextDocument(doc, vscode.ViewColumn.Beside);
+            
+            vscode.window.showInformationMessage(
+                `Diagram saved to ${path.basename(outputPath)}`,
+                'Open in Browser'
+            ).then(selection => {
+                if (selection === 'Open in Browser') {
+                    vscode.env.openExternal(vscode.Uri.file(outputPath));
+                }
+            });
+        });
+
+    } catch (error) {
+        vscode.window.showErrorMessage(`Error: ${error}`);
+        outputChannel.appendLine(`Error: ${error}`);
+    }
+}
+
+async function findCliPath(config: vscode.WorkspaceConfiguration): Promise<string> {
+    // 1. Check user configuration
+    const configuredPath = config.get<string>('cliPath');
+    if (configuredPath && fs.existsSync(configuredPath)) {
+        return configuredPath;
     }
 
-    // 2. Check workspace target directories
+    // 2. Check workspace debug build
     const workspaceFolders = vscode.workspace.workspaceFolders;
-    if (workspaceFolders) {
-        for (const folder of workspaceFolders) {
-            const debugPath = path.join(folder.uri.fsPath, 'target', 'debug', 'rpv-lsp');
-            const releasePath = path.join(folder.uri.fsPath, 'target', 'release', 'rpv-lsp');
-
-            if (fs.existsSync(releasePath)) {
-                return releasePath;
-            }
-            if (fs.existsSync(debugPath)) {
-                return debugPath;
-            }
+    if (workspaceFolders && workspaceFolders.length > 0) {
+        const workspaceRoot = workspaceFolders[0].uri.fsPath;
+        const debugPath = path.join(workspaceRoot, 'target', 'debug', 'rpv');
+        const releasePath = path.join(workspaceRoot, 'target', 'release', 'rpv');
+        
+        if (fs.existsSync(releasePath)) {
+            return releasePath;
+        }
+        if (fs.existsSync(debugPath)) {
+            return debugPath;
         }
     }
 
     // 3. Check system PATH
     try {
-        const result = child_process.execSync('which rpv-lsp', { encoding: 'utf8' });
-        const systemPath = result.trim();
+        const { stdout } = await execAsync(process.platform === 'win32' ? 'where rpv' : 'which rpv');
+        const systemPath = stdout.trim().split('\n')[0];
         if (systemPath && fs.existsSync(systemPath)) {
             return systemPath;
         }
     } catch {
-        // which command failed, rpv-lsp not in PATH
+        // Command failed, rpv not in PATH
     }
 
-    return undefined;
+    // 4. Not found - show helpful error
+    throw new Error(
+        'rpv CLI tool not found. Please:\n' +
+        '1. Build the project: cargo build --release\n' +
+        '2. Or configure the path in settings: rustPatternViz.cliPath\n' +
+        '3. Or install globally: cargo install --path .'
+    );
 }
 
-async function shareCurrentAnalysis() {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor || editor.document.languageId !== 'rust') {
-        vscode.window.showWarningMessage('Please open a Rust file to share analysis');
-        return;
-    }
-
-    const document = editor.document;
-    const position = editor.selection.active;
+async function generateSvgDiagram(cliPath: string, filePath: string): Promise<string | null> {
+    const config = vscode.workspace.getConfiguration('rustPatternViz');
+    const maxSize = config.get<number>('maxDiagramSize', 5000);
 
     try {
-        // Request hover at current position to get analysis
-        const hover = await vscode.commands.executeCommand<vscode.Hover[]>(
-            'vscode.executeHoverProvider',
-            document.uri,
-            position
+        const { stdout, stderr } = await execAsync(
+            `"${cliPath}" analyze "${filePath}" --output-format svg`,
+            { maxBuffer: maxSize * 1024 }
         );
 
-        if (!hover || hover.length === 0) {
-            vscode.window.showInformationMessage('No analysis available at current position');
-            return;
+        if (stderr) {
+            outputChannel.appendLine(`CLI stderr: ${stderr}`);
         }
 
-        // Parse the analysis from hover markdown
-        // In a real implementation, we'd have a custom LSP command to get the raw AnalysisReport
-        // For now, we'll make a direct API call with the document content
-
-        const config = vscode.workspace.getConfiguration('rustPatternViz');
-        const shareServerUrl = config.get<string>('shareServerUrl') || 'http://localhost:3030';
-
-        // Get analysis by analyzing current document
-        const sourceCode = document.getText();
-        const analysis = await analyzeCode(sourceCode, document.fileName);
-
-        // Create share via API
-        const response = await fetch(`${shareServerUrl}/api/share`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ report: analysis }),
-        });
-
-        if (!response.ok) {
-            throw new Error(`Share API returned ${response.status}`);
+        if (!stdout || stdout.trim().length === 0) {
+            outputChannel.appendLine('CLI returned empty output');
+            return null;
         }
 
-        const result = await response.json();
-        const shareUrl = result.share_url;
-
-        // Copy to clipboard
-        await vscode.env.clipboard.writeText(shareUrl);
-
-        // Show notification with link
-        const action = await vscode.window.showInformationMessage(
-            `Analysis shared! Link copied to clipboard.`,
-            'Open in Browser'
-        );
-
-        if (action === 'Open in Browser') {
-            vscode.env.openExternal(vscode.Uri.parse(shareUrl));
+        // Validate SVG output
+        if (!stdout.includes('<svg') || !stdout.includes('</svg>')) {
+            outputChannel.appendLine('CLI output is not valid SVG');
+            return null;
         }
-    } catch (error) {
-        console.error('Failed to share analysis:', error);
-        vscode.window.showErrorMessage(`Failed to share analysis: ${error}`);
+
+        return stdout;
+
+    } catch (error: any) {
+        outputChannel.appendLine(`CLI execution error: ${error.message}`);
+        
+        if (error.code === 'ENOENT') {
+            vscode.window.showErrorMessage(
+                'rpv CLI not found. Please build the project or configure the path in settings.',
+                'Open Settings'
+            ).then(selection => {
+                if (selection === 'Open Settings') {
+                    vscode.commands.executeCommand('rustPatternViz.openSettings');
+                }
+            });
+        }
+        
+        return null;
     }
 }
 
-async function analyzeCode(sourceCode: string, filePath: string): Promise<any> {
-    // This is a simplified version - in production, we'd use the actual analyzer
-    // or communicate with the LSP server for the full analysis
-    
-    // For now, create a minimal analysis structure
-    return {
-        file_path: filePath,
-        timestamp: new Date().toISOString(),
-        patterns: [],
-        import_suggestions: [],
-        decision_nodes: [],
-        overall_confidence: 0.0,
-        metadata: {
-            analyzer_version: '0.1.0',
-            total_lines: sourceCode.split('\n').length,
-            analyzed_constructs: 0,
-        },
-    };
+export function deactivate() {
+    if (outputChannel) {
+        outputChannel.dispose();
+    }
 }

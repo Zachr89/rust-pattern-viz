@@ -2,8 +2,9 @@
 .vscode-test/**
 src/**
 .gitignore
-.eslintrc.json
-**/*.map
-**/*.ts
+.yarnrc
 tsconfig.json
+*.map
+*.ts
 node_modules/**
+out/test/**
