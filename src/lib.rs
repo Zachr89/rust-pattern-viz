@@ -1,16 +1,16 @@
-//! Rust Pattern Viz - Core Library
-//! 
-//! This library provides Rust code analysis and pattern detection capabilities.
-//! It can be used as a library, CLI tool, LSP server, or compiled to WebAssembly.
+//! Rust Pattern Visualizer - Core Library
+//!
+//! This library provides tools for analyzing Rust code patterns and decision trees.
 
 pub mod analyzer;
 pub mod models;
+pub mod share;
+pub mod web_server;
 
-pub use analyzer::CodeAnalyzer;
-pub use models::{AnalysisReport, Pattern, DecisionNode, Import, Alternative, DecisionType};
-
-#[cfg(feature = "wasm")]
+#[cfg(target_arch = "wasm32")]
 pub mod wasm;
 
-#[cfg(feature = "wasm")]
-pub use wasm::*;
+pub use analyzer::CodeAnalyzer;
+pub use models::{AnalysisReport, DecisionNode, Pattern};
+pub use share::{ShareService, SharedAnalysis};
+pub use web_server::ShareServer;

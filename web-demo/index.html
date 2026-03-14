@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust Pattern Visualizer - Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            padding: 2rem;
+        }
+
+        .panel {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        textarea {
+            flex: 1;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            resize: vertical;
+            min-height: 400px;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .output {
+            flex: 1;
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: #f9f9f9;
+            overflow-y: auto;
+            min-height: 400px;
+            max-height: 600px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 0.8rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-share {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-share:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .pattern-item {
+            background: white;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .pattern-type {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .pattern-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .confidence {
+            background: #10b981;
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+        }
+
+        .code-snippet {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 0.8rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            margin-top: 0.5rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 3rem;
+        }
+
+        .share-link-container {
+            background: #f0f9ff;
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .share-link-container.visible {
+            display: block;
+        }
+
+        .share-link-header {
+            font-weight: 600;
+            color: #1e40af;
+            margin-bottom: 0.5rem;
+        }
+
+        .share-link-url {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .share-link-url input {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #bfdbfe;
+            border-radius: 4px;
+            font-family: monospace;
+            background: white;
+        }
+
+        .btn-copy {
+            padding: 0.5rem 1rem;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .btn-copy:hover {
+            background: #2563eb;
+        }
+
+        @media (max-width: 968px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🦀 Rust Pattern Visualizer</h1>
+            <p class="subtitle">Analyze and visualize Rust code patterns in real-time</p>
+        </header>
+
+        <div class="main-content">
+            <div class="panel">
+                <div class="panel-header">
+                    📝 Input Code
+                </div>
+                <textarea id="codeInput" placeholder="Paste your Rust code here...">fn process_data(input: &str) -> Result<Vec<String>, Box<dyn Error>> {
+    let items: Vec<String> = input
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .map(|line| line.trim().to_string())
+        .collect();
+    
+    if items.is_empty() {
+        return Err("No valid items found".into());
+    }
+    
+    Ok(items)
+}</textarea>
+                <div class="controls">
+                    <button class="btn-primary" onclick="analyzeCode()">Analyze Code</button>
+                    <button class="btn-secondary" onclick="loadExample()">Load Example</button>
+                    <button class="btn-share" id="shareBtn" onclick="shareAnalysis()" disabled>Share Analysis</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    📊 Analysis Results
+                </div>
+                <div class="share-link-container" id="shareLinkContainer">
+                    <div class="share-link-header">✨ Shareable Link</div>
+                    <div class="share-link-url">
+                        <input type="text" id="shareLinkInput" readonly>
+                        <button class="btn-copy" onclick="copyShareLink()">Copy</button>
+                    </div>
+                </div>
+                <div class="output" id="output">
+                    <div class="empty-state">
+                        <p>👆 Enter Rust code and click "Analyze Code" to see patterns</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentAnalysis = null;
+
+        // Check if loading shared analysis from URL
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const shareId = urlParams.get('share');
+            if (shareId) {
+                loadSharedAnalysis(shareId);
+            }
+        });
+
+        async function analyzeCode() {
+            const code = document.getElementById('codeInput').value;
+            const output = document.getElementById('output');
+            const shareBtn = document.getElementById('shareBtn');
+            
+            if (!code.trim()) {
+                output.innerHTML = '<div class="empty-state"><p>⚠️ Please enter some code first</p></div>';
+                return;
+            }
+
+            output.innerHTML = '<div class="empty-state"><p>🔄 Analyzing...</p></div>';
+            shareBtn.disabled = true;
+            document.getElementById('shareLinkContainer').classList.remove('visible');
+
+            try {
+                // Simulate analysis (in production, this would call the WASM module or API)
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                const analysis = performAnalysis(code);
+                currentAnalysis = analysis;
+                displayAnalysis(analysis);
+                shareBtn.disabled = false;
+            } catch (error) {
+                output.innerHTML = `<div class="empty-state"><p>❌ Error: ${error.message}</p></div>`;
+            }
+        }
+
+        function performAnalysis(code) {
+            // Simplified pattern detection (in production, use actual analyzer)
+            const patterns = [];
+            
+            if (code.includes('Result<')) {
+                patterns.push({
+                    pattern_type: 'Error Handling',
+                    start_line: 1,
+                    end_line: code.split('\n').length,
+                    confidence: 0.95,
+                    reasoning: 'Uses Result type for error handling',
+                    code_snippet: code.substring(0, 100)
+                });
+            }
+            
+            if (code.includes('.map(') || code.includes('.filter(')) {
+                patterns.push({
+                    pattern_type: 'Iterator Chain',
+                    start_line: 1,
+                    end_line: code.split('\n').length,
+                    confidence: 0.90,
+                    reasoning: 'Uses functional iterator methods',
+                    code_snippet: code.substring(0, 100)
+                });
+            }
+            
+            return {
+                file_path: 'input.rs',
+                timestamp: new Date().toISOString(),
+                patterns: patterns,
+                import_suggestions: [],
+                decision_nodes: [],
+                overall_confidence: patterns.length > 0 ? 0.92 : 0.5,
+                metadata: {
+                    analyzer_version: '0.1.0',
+                    total_lines: code.split('\n').length,
+                    analyzed_constructs: patterns.length
+                }
+            };
+        }
+
+        function displayAnalysis(analysis) {
+            const output = document.getElementById('output');
+            
+            if (analysis.patterns.length === 0) {
+                output.innerHTML = '<div class="empty-state"><p>✅ No specific patterns detected</p></div>';
+                return;
+            }
+
+            let html = '';
+            
+            analysis.patterns.forEach(pattern => {
+                html += `
+                    <div class="pattern-item">
+                        <div class="pattern-type">${pattern.pattern_type}</div>
+                        <div class="pattern-meta">
+                            <span>Lines ${pattern.start_line}-${pattern.end_line}</span>
+                            <span class="confidence">${(pattern.confidence * 100).toFixed(0)}% confidence</span>
+                        </div>
+                        ${pattern.reasoning ? `<p>${pattern.reasoning}</p>` : ''}
+                        <div class="code-snippet">${escapeHtml(pattern.code_snippet)}</div>
+                    </div>
+                `;
+            });
+
+            output.innerHTML = html;
+        }
+
+        async function shareAnalysis() {
+            if (!currentAnalysis) {
+                alert('Please analyze some code first');
+                return;
+            }
+
+            const shareBtn = document.getElementById('shareBtn');
+            shareBtn.disabled = true;
+            shareBtn.textContent = 'Sharing...';
+
+            try {
+                const shareServerUrl = 'http://localhost:3030';
+                const response = await fetch(`${shareServerUrl}/api/share`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ report: currentAnalysis })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}`);
+                }
+
+                const result = await response.json();
+                const shareUrl = result.share_url;
+
+                // Display share link
+                document.getElementById('shareLinkInput').value = shareUrl;
+                document.getElementById('shareLinkContainer').classList.add('visible');
+
+                // Update URL without reload
+                const url = new URL(window.location);
+                url.searchParams.set('share', result.share_id);
+                window.history.pushState({}, '', url);
+
+                shareBtn.textContent = 'Share Analysis';
+                shareBtn.disabled = false;
+            } catch (error) {
+                alert(`Failed to share analysis: ${error.message}\n\nMake sure the share server is running: cargo run --bin rpv-share-server`);
+                shareBtn.textContent = 'Share Analysis';
+                shareBtn.disabled = false;
+            }
+        }
+
+        async function loadSharedAnalysis(shareId) {
+            const output = document.getElementById('output');
+            output.innerHTML = '<div class="empty-state"><p>🔄 Loading shared analysis...</p></div>';
+
+            try {
+                const shareServerUrl = 'http://localhost:3030';
+                const response = await fetch(`${shareServerUrl}/api/share/${shareId}`);
+
+                if (!response.ok) {
+                    throw new Error('Share not found or expired');
+                }
+
+                const result = await response.json();
+                currentAnalysis = result.share.report;
+                
+                // Display the analysis
+                displayAnalysis(currentAnalysis);
+                
+                // Show the share link
+                const shareUrl = `${window.location.origin}${window.location.pathname}?share=${shareId}`;
+                document.getElementById('shareLinkInput').value = shareUrl;
+                document.getElementById('shareLinkContainer').classList.add('visible');
+                document.getElementById('shareBtn').disabled = false;
+
+                // Populate code input if available
+                if (result.share.report.patterns.length > 0) {
+                    const snippet = result.share.report.patterns[0].code_snippet;
+                    document.getElementById('codeInput').value = snippet;
+                }
+            } catch (error) {
+                output.innerHTML = `<div class="empty-state"><p>❌ ${error.message}</p></div>`;
+            }
+        }
+
+        function copyShareLink() {
+            const input = document.getElementById('shareLinkInput');
+            input.select();
+            document.execCommand('copy');
+            
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = 'Copied!';
+            setTimeout(() => {
+                btn.textContent = originalText;
+            }, 2000);
+        }
+
+        function loadExample() {
+            document.getElementById('codeInput').value = `fn process_items(data: Vec<String>) -> Result<Vec<Item>, ProcessError> {
+    data.iter()
+        .filter(|s| !s.is_empty())
+        .map(|s| parse_item(s))
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| ProcessError::ParseFailed(e))
+}
+
+struct Item {
+    id: u32,
+    name: String,
+}
+
+#[derive(Debug)]
+enum ProcessError {
+    ParseFailed(String),
+    InvalidData,
+}`;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

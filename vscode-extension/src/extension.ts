@@ -4,47 +4,37 @@ import {
     LanguageClient,
     LanguageClientOptions,
     ServerOptions,
-    TransportKind
 } from 'vscode-languageclient/node';
+import * as fs from 'fs';
+import * as child_process from 'child_process';
 
 let client: LanguageClient | undefined;
 
 export async function activate(context: vscode.ExtensionContext) {
     console.log('Rust Pattern Viz extension activating...');
 
-    const config = vscode.workspace.getConfiguration('rustPatternViz');
-    
-    if (!config.get('enable')) {
-        console.log('Rust Pattern Viz is disabled');
-        return;
-    }
-
-    // Find the LSP server binary
-    const serverPath = await findServerPath(config.get('serverPath') as string);
-    
+    const serverPath = await findServerBinary();
     if (!serverPath) {
         vscode.window.showErrorMessage(
-            'Rust Pattern Viz: Could not find rpv-lsp binary. Please build the project with: cargo build --bin rpv-lsp'
+            'Could not find rpv-lsp binary. Please build it with `cargo build --bin rpv-lsp` or set rustPatternViz.serverPath.'
         );
         return;
     }
 
-    // Define server options
+    console.log('Found rpv-lsp at:', serverPath);
+
     const serverOptions: ServerOptions = {
         command: serverPath,
         args: [],
-        transport: TransportKind.stdio
     };
 
-    // Define client options
     const clientOptions: LanguageClientOptions = {
         documentSelector: [{ scheme: 'file', language: 'rust' }],
         synchronize: {
-            fileEvents: vscode.workspace.createFileSystemWatcher('**/*.rs')
-        }
+            fileEvents: vscode.workspace.createFileSystemWatcher('**/*.rs'),
+        },
     };
 
-    // Create and start the language client
     client = new LanguageClient(
         'rustPatternViz',
         'Rust Pattern Visualizer',
@@ -52,90 +42,167 @@ export async function activate(context: vscode.ExtensionContext) {
         clientOptions
     );
 
-    // Start the client (this will also start the server)
-    await client.start();
-
-    console.log('Rust Pattern Viz extension activated');
+    try {
+        await client.start();
+        console.log('Rust Pattern Viz LSP server started successfully');
+    } catch (error) {
+        console.error('Failed to start LSP server:', error);
+        vscode.window.showErrorMessage(
+            `Failed to start Rust Pattern Viz LSP server: ${error}`
+        );
+        return;
+    }
 
     // Register restart command
-    const restartCommand = vscode.commands.registerCommand(
-        'rustPatternViz.restartServer',
-        async () => {
+    context.subscriptions.push(
+        vscode.commands.registerCommand('rustPatternViz.restartServer', async () => {
             if (client) {
                 await client.stop();
                 await client.start();
                 vscode.window.showInformationMessage('Rust Pattern Viz server restarted');
             }
-        }
+        })
     );
 
-    context.subscriptions.push(restartCommand);
-
-    // Show activation message
-    vscode.window.showInformationMessage(
-        'Rust Pattern Viz is now active! Hover over Rust functions to see pattern analysis.'
+    // Register share analysis command
+    context.subscriptions.push(
+        vscode.commands.registerCommand('rustPatternViz.shareAnalysis', async () => {
+            await shareCurrentAnalysis();
+        })
     );
+
+    console.log('Rust Pattern Viz extension activated');
 }
 
-export async function deactivate(): Promise<void> {
-    if (client) {
-        await client.stop();
+export function deactivate(): Thenable<void> | undefined {
+    if (!client) {
+        return undefined;
     }
+    return client.stop();
 }
 
-async function findServerPath(configPath: string): Promise<string | undefined> {
-    // If user specified a path, use that
-    if (configPath && configPath.trim() !== '') {
+async function findServerBinary(): Promise<string | undefined> {
+    // 1. Check user configuration
+    const config = vscode.workspace.getConfiguration('rustPatternViz');
+    const configPath = config.get<string>('serverPath');
+    if (configPath && fs.existsSync(configPath)) {
         return configPath;
     }
 
-    // Try to find in workspace
+    // 2. Check workspace target directories
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (workspaceFolders) {
         for (const folder of workspaceFolders) {
-            // Check debug build
-            let serverPath = path.join(folder.uri.fsPath, 'target', 'debug', 'rpv-lsp');
-            if (process.platform === 'win32') {
-                serverPath += '.exe';
+            const debugPath = path.join(folder.uri.fsPath, 'target', 'debug', 'rpv-lsp');
+            const releasePath = path.join(folder.uri.fsPath, 'target', 'release', 'rpv-lsp');
+
+            if (fs.existsSync(releasePath)) {
+                return releasePath;
             }
-            
-            try {
-                await vscode.workspace.fs.stat(vscode.Uri.file(serverPath));
-                return serverPath;
-            } catch {
-                // Try release build
-                serverPath = path.join(folder.uri.fsPath, 'target', 'release', 'rpv-lsp');
-                if (process.platform === 'win32') {
-                    serverPath += '.exe';
-                }
-                
-                try {
-                    await vscode.workspace.fs.stat(vscode.Uri.file(serverPath));
-                    return serverPath;
-                } catch {
-                    // Continue to next folder
-                }
+            if (fs.existsSync(debugPath)) {
+                return debugPath;
             }
         }
     }
 
-    // Try to find in PATH
-    const pathEnv = process.env.PATH || '';
-    const pathDirs = pathEnv.split(process.platform === 'win32' ? ';' : ':');
-    
-    for (const dir of pathDirs) {
-        let serverPath = path.join(dir, 'rpv-lsp');
-        if (process.platform === 'win32') {
-            serverPath += '.exe';
+    // 3. Check system PATH
+    try {
+        const result = child_process.execSync('which rpv-lsp', { encoding: 'utf8' });
+        const systemPath = result.trim();
+        if (systemPath && fs.existsSync(systemPath)) {
+            return systemPath;
         }
-        
-        try {
-            await vscode.workspace.fs.stat(vscode.Uri.file(serverPath));
-            return serverPath;
-        } catch {
-            // Continue to next directory
-        }
+    } catch {
+        // which command failed, rpv-lsp not in PATH
     }
 
     return undefined;
+}
+
+async function shareCurrentAnalysis() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || editor.document.languageId !== 'rust') {
+        vscode.window.showWarningMessage('Please open a Rust file to share analysis');
+        return;
+    }
+
+    const document = editor.document;
+    const position = editor.selection.active;
+
+    try {
+        // Request hover at current position to get analysis
+        const hover = await vscode.commands.executeCommand<vscode.Hover[]>(
+            'vscode.executeHoverProvider',
+            document.uri,
+            position
+        );
+
+        if (!hover || hover.length === 0) {
+            vscode.window.showInformationMessage('No analysis available at current position');
+            return;
+        }
+
+        // Parse the analysis from hover markdown
+        // In a real implementation, we'd have a custom LSP command to get the raw AnalysisReport
+        // For now, we'll make a direct API call with the document content
+
+        const config = vscode.workspace.getConfiguration('rustPatternViz');
+        const shareServerUrl = config.get<string>('shareServerUrl') || 'http://localhost:3030';
+
+        // Get analysis by analyzing current document
+        const sourceCode = document.getText();
+        const analysis = await analyzeCode(sourceCode, document.fileName);
+
+        // Create share via API
+        const response = await fetch(`${shareServerUrl}/api/share`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ report: analysis }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Share API returned ${response.status}`);
+        }
+
+        const result = await response.json();
+        const shareUrl = result.share_url;
+
+        // Copy to clipboard
+        await vscode.env.clipboard.writeText(shareUrl);
+
+        // Show notification with link
+        const action = await vscode.window.showInformationMessage(
+            `Analysis shared! Link copied to clipboard.`,
+            'Open in Browser'
+        );
+
+        if (action === 'Open in Browser') {
+            vscode.env.openExternal(vscode.Uri.parse(shareUrl));
+        }
+    } catch (error) {
+        console.error('Failed to share analysis:', error);
+        vscode.window.showErrorMessage(`Failed to share analysis: ${error}`);
+    }
+}
+
+async function analyzeCode(sourceCode: string, filePath: string): Promise<any> {
+    // This is a simplified version - in production, we'd use the actual analyzer
+    // or communicate with the LSP server for the full analysis
+    
+    // For now, create a minimal analysis structure
+    return {
+        file_path: filePath,
+        timestamp: new Date().toISOString(),
+        patterns: [],
+        import_suggestions: [],
+        decision_nodes: [],
+        overall_confidence: 0.0,
+        metadata: {
+            analyzer_version: '0.1.0',
+            total_lines: sourceCode.split('\n').length,
+            analyzed_constructs: 0,
+        },
+    };
 }

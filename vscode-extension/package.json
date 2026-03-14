@@ -1,0 +1,81 @@
+{
+  "name": "rust-pattern-viz",
+  "displayName": "Rust Pattern Visualizer",
+  "description": "Visualize Rust code patterns and AI decision trees",
+  "version": "0.1.0",
+  "publisher": "rust-pattern-viz",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Visualization"
+  ],
+  "activationEvents": [
+    "onLanguage:rust"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "rustPatternViz.restartServer",
+        "title": "Rust Pattern Viz: Restart LSP Server"
+      },
+      {
+        "command": "rustPatternViz.shareAnalysis",
+        "title": "Rust Pattern Viz: Share Current Analysis"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "rustPatternViz.shareAnalysis",
+          "when": "editorLangId == rust",
+          "group": "rust-pattern-viz"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Rust Pattern Visualizer",
+      "properties": {
+        "rustPatternViz.serverPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to rpv-lsp binary. Leave empty for auto-detection."
+        },
+        "rustPatternViz.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Traces communication between VS Code and the LSP server."
+        },
+        "rustPatternViz.shareServerUrl": {
+          "type": "string",
+          "default": "http://localhost:3030",
+          "description": "URL of the share server for generating shareable links."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.54.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  }
+}
