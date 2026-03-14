@@ -1,0 +1,9 @@
+# Placeholder for demo.gif and other assets
+
+This directory will contain:
+- demo.gif - The main demonstration GIF for README
+- screenshot-pattern.png - Pattern analysis screenshot
+- screenshot-exhaustive.png - Exhaustiveness check screenshot
+- screenshot-tree.png - Decision tree screenshot
+
+See DEMO_RECORDING.md for how to create these assets.
