@@ -2,12 +2,15 @@
 name = "rust-pattern-viz"
 version = "1.1.0"
 edition = "2021"
-authors = ["Zachr89"]
-description = "Analyze and visualize Rust code patterns including match, if let, and while let expressions"
+authors = ["Your Name <your.email@example.com>"]
+description = "Visualize Rust pattern matching and control flow with AI-powered analysis"
 license = "MIT"
-repository = "https://github.com/Zachr89/rust-pattern-viz"
-keywords = ["rust", "patterns", "visualization", "analysis", "lsp"]
-categories = ["development-tools", "visualization"]
+repository = "https://github.com/yourusername/rust-pattern-viz"
+keywords = ["rust", "visualization", "pattern-matching", "analysis", "wasm"]
+categories = ["development-tools", "visualization", "wasm"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
 
 [[bin]]
 name = "rpv"
@@ -18,19 +21,23 @@ name = "rpv-lsp"
 path = "src/lsp_server.rs"
 
 [dependencies]
-syn = { version = "2.0", features = ["full", "visit"] }
-quote = "1.0"
+syn = { version = "2.0", features = ["full", "visit", "extra-traits"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-chrono = "0.4"
 clap = { version = "4.0", features = ["derive"] }
 tower-lsp = "0.20"
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1.0", features = ["full"] }
+wasm-bindgen = "0.2"
 
-[dev-dependencies]
-tempfile = "3.8"
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2"
+console_error_panic_hook = "0.1"
 
 [profile.release]
-opt-level = 3
+opt-level = "z"
 lto = true
 codegen-units = 1
+strip = true
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-Oz", "--enable-mutable-globals"]

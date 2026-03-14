@@ -1,187 +1,109 @@
-# Rust Pattern Visualizer - VSCode Extension (Beta)
+# Rust Pattern Visualizer - VS Code Extension
 
-> **🎯 Pro Version Coming Soon**: This beta preview demonstrates hover-based pattern visualization. The full Pro version will include real-time updates, team collaboration, and enhanced diagram customization.
+Visualize Rust pattern matching, control flow, and decision trees directly in your editor. This extension wraps the powerful rust-pattern-viz analyzer as a VS Code sidebar panel, providing instant visual feedback as you code.
 
 ## Features
 
-### ✨ Hover Pattern Diagrams (Beta)
-
-Hover over Rust functions, structs, or impl blocks to instantly see:
-- **Error handling patterns** (Result, Option, unwrap chains)
-- **Iterator chains** (map, filter, collect)
-- **Control flow** (match, if-let)
-- **Decision trees** showing code reasoning
-
-![Demo](https://via.placeholder.com/800x400?text=Hover+Demo+Screenshot)
-
-### 📊 Full File Analysis
-
-Generate complete pattern diagrams for entire files with the command palette:
-- Open Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
-- Run: **"Rust Pattern Viz: Generate Diagram for Current File"**
-- View SVG output in split view or browser
-
-## Installation
-
-### Prerequisites
-
-1. **Install the Rust CLI tool** (required - extension calls this binary):
-   ```bash
-   git clone https://github.com/yourusername/rust-pattern-viz
-   cd rust-pattern-viz
-   cargo build --release
-   cargo install --path .
-   ```
-
-2. **Verify installation**:
-   ```bash
-   rpv --version
-   ```
-
-### Extension Setup
-
-#### From VSCode Marketplace (Coming Soon)
-1. Search "Rust Pattern Visualizer" in Extensions
-2. Click Install
-3. Reload VSCode
-
-#### Manual Installation (Beta)
-1. Download `.vsix` from [releases](https://github.com/yourusername/rust-pattern-viz/releases)
-2. VSCode → Extensions → `...` → Install from VSIX
-3. Select downloaded file
+- **Real-time Pattern Analysis**: Automatically analyzes Rust files as you type (with configurable debouncing)
+- **Interactive Visualizations**: SVG-based diagrams showing:
+  - `match` expressions and pattern coverage
+  - `if let` and `while let` control flow
+  - Error handling patterns (`Result<T,E>`, `Option<T>`)
+  - Decision trees with confidence scores
+  - Import analysis
+- **Export Capability**: Save visualizations as SVG files for documentation
+- **Zero Configuration**: Works out of the box with any Rust project
 
 ## Usage
 
-### Hover Analysis
-1. Open any `.rs` file
-2. Hover over `fn`, `impl`, `struct`, or `enum` keywords
-3. View pattern diagram in hover panel
-4. Click links in hover for settings or full diagram
+1. **Install the Extension**: Search for "Rust Pattern Visualizer" in VS Code marketplace
+2. **Open a Rust File**: The pattern visualization panel appears in the activity bar (left sidebar)
+3. **View Patterns**: The panel automatically updates as you edit code
+4. **Export Diagrams**: Click the export icon to save SVG visualizations
 
-### Generate Full Diagram
-- **Command Palette**: `Rust Pattern Viz: Generate Diagram for Current File`
-- **Or**: Right-click in editor → future context menu option
-- Output: SVG file saved next to source file
+## Commands
 
-### Configuration
+- `Rust Pattern Viz: Refresh` - Manually refresh the current analysis
+- `Rust Pattern Viz: Export SVG` - Export the current visualization to an SVG file
 
-Open settings (`Ctrl+,`) and search for "Rust Pattern Viz":
+## Configuration
 
-- **`rustPatternViz.cliPath`**: Path to `rpv` binary (auto-detected if installed globally)
-- **`rustPatternViz.enableHover`**: Enable/disable hover diagrams
-- **`rustPatternViz.maxDiagramSize`**: Maximum diagram height (default: 5000px)
-
-Example settings.json:
 ```json
 {
-  "rustPatternViz.cliPath": "/usr/local/bin/rpv",
-  "rustPatternViz.enableHover": true,
-  "rustPatternViz.maxDiagramSize": 8000
+  "rustPatternViz.autoRefresh": true,
+  "rustPatternViz.debounceDelay": 500,
+  "rustPatternViz.showConfidenceScores": true
 }
 ```
 
-## Monetization Roadmap
+- **autoRefresh**: Enable/disable automatic analysis on file changes
+- **debounceDelay**: Milliseconds to wait after typing before re-analyzing (default: 500)
+- **showConfidenceScores**: Show confidence scores in pattern boxes (default: true)
 
-### ✅ Free (Current Beta)
-- CLI tool (MIT licensed)
-- Basic hover diagrams
-- SVG export
-- Community support
+## Example Visualizations
 
-### 🚀 Pro (Coming Q2 2024)
-- **Real-time updates** as you type
-- **Team collaboration** - share diagrams with annotations
-- **Enhanced visualizations** - interactive SVG with zoom/pan
-- **Custom themes** - match your editor colors
-- **Priority support** - direct Slack channel
-- **License**: Subscription ($10/month or $100/year)
-
-[**Join Pro Waitlist**](https://your-landing-page.com/waitlist) - Get 50% off for early supporters!
-
-## Troubleshooting
-
-### "rpv CLI tool not found"
-
-**Solution**: Ensure `rpv` is installed and in PATH:
-```bash
-# Check if installed
-which rpv  # macOS/Linux
-where rpv  # Windows
-
-# If not found, install
-cargo install --path .
-
-# Or configure path in settings
-# VSCode Settings → rustPatternViz.cliPath → /path/to/rpv
-```
-
-### "Diagram not showing"
-
-1. Check Output panel: View → Output → "Rust Pattern Viz"
-2. Verify file is valid Rust (compiles without syntax errors)
-3. Try generating full diagram via command palette
-4. Restart VSCode: Developer → Reload Window
-
-### "SVG too large"
-
-Increase limit in settings:
-```json
-{
-  "rustPatternViz.maxDiagramSize": 10000
+### Match Expression
+```rust
+match result {
+    Ok(value) => process(value),
+    Err(e) => handle_error(e),
 }
 ```
+→ Shows both branches with confidence scores and reasoning
 
-## Development
+### Control Flow
+```rust
+while let Some(item) = iterator.next() {
+    process(item);
+}
+```
+→ Displays loop condition diamond with success/continuation paths
 
-### Building from Source
+### Error Handling
+```rust
+fn process() -> Result<Value, Error> {
+    let data = fetch_data()?;
+    Ok(transform(data))
+}
+```
+→ Highlights error propagation pattern with confidence score
+
+## Requirements
+
+- VS Code 1.75.0 or higher
+- Rust files (`.rs` extension)
+
+## Building from Source
 
 ```bash
+# Install dependencies
 cd vscode-extension
 npm install
+
+# Build WASM module
+npm run build:wasm
+
+# Compile extension
 npm run compile
+
+# Package for distribution
+npm run package
 ```
 
-### Running Extension Dev Host
+## Known Issues
 
-1. Open `vscode-extension/` in VSCode
-2. Press F5 to launch Extension Development Host
-3. Open a Rust file in the new window
-4. Test hover functionality
-
-### Packaging
-
-```bash
-npm install -g @vscode/vsce
-cd vscode-extension
-vsce package
-# Creates rust-pattern-viz-0.1.0.vsix
-```
+- Large files (>10k lines) may take a few seconds to analyze
+- Complex macro-generated code may not be fully analyzed
+- WebAssembly loading requires a modern browser engine (VS Code 1.75+)
 
 ## Contributing
 
-We're actively developing the Pro version! Areas we need help:
-
-- **UI/UX**: Diagram layout improvements
-- **Performance**: Faster analysis for large files
-- **Testing**: Edge cases in pattern detection
-- **Documentation**: More examples and tutorials
-
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for details.
-
-## Feedback
-
-- **Issues**: [GitHub Issues](https://github.com/yourusername/rust-pattern-viz/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/rust-pattern-viz/discussions)
-- **Twitter**: [@yourhandle](https://twitter.com/yourhandle)
+Report issues or suggest features on [GitHub](https://github.com/yourusername/rust-pattern-viz/issues).
 
 ## License
 
-- **Extension**: MIT License (free forever)
-- **CLI Tool**: MIT License
-- **Pro Features**: Proprietary (subscription required)
+MIT License - See LICENSE file for details
 
----
+## Credits
 
-**Made with 🦀 by the Rust Pattern Viz team**
-
-[Website](https://your-site.com) • [Docs](https://docs.your-site.com) • [Changelog](CHANGELOG.md)
+Built on the rust-pattern-viz analyzer by [Your Name]. Inspired by Rustowl and the Rust visualization community.
