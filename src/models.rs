@@ -23,10 +23,10 @@ pub struct Pattern {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Import {
-    pub module: String,
-    pub items: Vec<String>,
-    pub reasoning: String,
+    pub path: String,
+    pub category: String,
     pub confidence: f64,
+    pub reasoning: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -34,49 +34,23 @@ pub struct DecisionNode {
     pub id: String,
     pub decision_type: DecisionType,
     pub description: String,
-    pub alternatives: Vec<Alternative>,
+    pub alternatives: Vec<String>,
     pub chosen: String,
     pub confidence: f64,
+    pub reasoning: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum DecisionType {
     ImportChoice,
     PatternSelection,
     ErrorHandling,
     TypeInference,
-    LifetimeAnnotation,
-    TraitBound,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Alternative {
-    pub name: String,
-    pub description: String,
-    pub score: f64,
+    ControlFlow,  // New: for if let / while let patterns
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReportMetadata {
     pub analyzer_version: String,
-    pub rust_edition: String,
-    pub analysis_duration_ms: u64,
-}
-
-impl AnalysisReport {
-    pub fn new(file_path: String) -> Self {
-        Self {
-            file_path,
-            timestamp: chrono::Utc::now().to_rfc3339(),
-            patterns: Vec::new(),
-            import_suggestions: Vec::new(),
-            decision_nodes: Vec::new(),
-            overall_confidence: 0.0,
-            metadata: ReportMetadata {
-                analyzer_version: env!("CARGO_PKG_VERSION").to_string(),
-                rust_edition: "2021".to_string(),
-                analysis_duration_ms: 0,
-            },
-        }
-    }
+    pub rust_version: String,
 }

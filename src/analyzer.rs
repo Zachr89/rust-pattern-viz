@@ -1,7 +1,6 @@
-use crate::models::*;
-use anyhow::{Context, Result};
-use syn::visit::{self, Visit};
-use syn::{File, Item, ItemFn, ItemImpl, ItemStruct, ItemUse};
+use crate::models::{AnalysisReport, DecisionNode, DecisionType, Import, Pattern, ReportMetadata};
+use std::path::Path;
+use syn::{visit::Visit, Expr, ExprIf, ExprWhile, File, Item, ItemFn, ItemImpl, Pat, Stmt};
 
 pub struct CodeAnalyzer;
 
@@ -10,30 +9,347 @@ impl CodeAnalyzer {
         Self
     }
 
-    pub fn analyze(&self, source: &str, file_path: &str) -> Result<AnalysisReport> {
-        let start = std::time::Instant::now();
-        
-        let syntax = syn::parse_file(source)
-            .context("Failed to parse Rust source code")?;
-        
-        let mut visitor = PatternVisitor::new();
-        visitor.visit_file(&syntax);
-        
-        let mut report = AnalysisReport::new(file_path.to_string());
-        report.patterns = visitor.patterns;
-        report.import_suggestions = visitor.imports;
-        report.decision_nodes = visitor.decisions;
-        
-        // Calculate overall confidence
-        if !report.patterns.is_empty() {
-            report.overall_confidence = report.patterns.iter()
-                .map(|p| p.confidence)
-                .sum::<f64>() / report.patterns.len() as f64;
+    pub fn analyze(&self, source: &str, file_path: &Path) -> Result<AnalysisReport, String> {
+        let syntax_tree = syn::parse_file(source).map_err(|e| format!("Parse error: {}", e))?;
+
+        let mut visitor = PatternVisitor::new(source);
+        visitor.visit_file(&syntax_tree);
+
+        let overall_confidence = if visitor.patterns.is_empty() {
+            0.0
+        } else {
+            visitor.patterns.iter().map(|p| p.confidence).sum::<f64>()
+                / visitor.patterns.len() as f64
+        };
+
+        Ok(AnalysisReport {
+            file_path: file_path.display().to_string(),
+            timestamp: chrono::Utc::now().to_rfc3339(),
+            patterns: visitor.patterns,
+            import_suggestions: visitor.imports,
+            decision_nodes: visitor.decision_nodes,
+            overall_confidence,
+            metadata: ReportMetadata {
+                analyzer_version: env!("CARGO_PKG_VERSION").to_string(),
+                rust_version: std::env::var("RUSTC_VERSION").unwrap_or_else(|_| "unknown".to_string()),
+            },
+        })
+    }
+}
+
+struct PatternVisitor<'a> {
+    source: &'a str,
+    patterns: Vec<Pattern>,
+    imports: Vec<Import>,
+    decision_nodes: Vec<DecisionNode>,
+    node_counter: usize,
+}
+
+impl<'a> PatternVisitor<'a> {
+    fn new(source: &'a str) -> Self {
+        Self {
+            source,
+            patterns: Vec::new(),
+            imports: Vec::new(),
+            decision_nodes: Vec::new(),
+            node_counter: 0,
         }
-        
-        report.metadata.analysis_duration_ms = start.elapsed().as_millis() as u64;
-        
-        Ok(report)
+    }
+
+    fn next_node_id(&mut self) -> String {
+        self.node_counter += 1;
+        format!("node_{}", self.node_counter)
+    }
+
+    fn get_line_number(&self, span_start: usize) -> usize {
+        self.source[..span_start].lines().count()
+    }
+
+    fn extract_code_snippet(&self, start: usize, end: usize) -> String {
+        self.source
+            .get(start..end)
+            .unwrap_or("")
+            .lines()
+            .take(10)
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    fn analyze_if_let(&mut self, if_expr: &ExprIf) {
+        // Check if this is an `if let` pattern
+        if let Expr::Let(let_expr) = &*if_expr.cond {
+            let start_line = self.get_line_number(let_expr.let_token.span.start().into());
+            let end_line = start_line + 5; // Approximate
+
+            // Extract pattern information
+            let pattern_str = quote::quote!(#let_expr).to_string();
+            
+            self.patterns.push(Pattern {
+                pattern_type: "Conditional Pattern Match (if let)".to_string(),
+                start_line,
+                end_line,
+                confidence: 0.85,
+                reasoning: Some(
+                    "if let expression allows pattern matching with a success branch. \
+                     Falls through to else branch if pattern doesn't match."
+                        .to_string(),
+                ),
+                code_snippet: pattern_str.clone(),
+            });
+
+            // Create decision node for control flow
+            let node_id = self.next_node_id();
+            let pattern_name = self.extract_pattern_name(&let_expr.pat);
+            
+            self.decision_nodes.push(DecisionNode {
+                id: node_id,
+                decision_type: DecisionType::ControlFlow,
+                description: format!(
+                    "if let {} = <expr> - Pattern match with conditional branching",
+                    pattern_name
+                ),
+                alternatives: vec![
+                    "Use match expression for exhaustive handling".to_string(),
+                    "Use if with manual destructuring".to_string(),
+                    "Use pattern guards for additional conditions".to_string(),
+                ],
+                chosen: format!("if let {} (success branch only)", pattern_name),
+                confidence: 0.85,
+                reasoning: Some(
+                    "if let is optimal when only the success case needs handling. \
+                     More concise than match for single-variant extraction."
+                        .to_string(),
+                ),
+            });
+        }
+
+        // Visit nested blocks
+        self.visit_block(&if_expr.then_branch);
+        if let Some((_, else_branch)) = &if_expr.else_branch {
+            self.visit_expr(else_branch);
+        }
+    }
+
+    fn analyze_while_let(&mut self, while_expr: &ExprWhile) {
+        // Check if this is a `while let` pattern
+        if let Expr::Let(let_expr) = &*while_expr.cond {
+            let start_line = self.get_line_number(let_expr.let_token.span.start().into());
+            let end_line = start_line + 8; // Approximate
+
+            let pattern_str = quote::quote!(#let_expr).to_string();
+            
+            self.patterns.push(Pattern {
+                pattern_type: "Conditional Loop (while let)".to_string(),
+                start_line,
+                end_line,
+                confidence: 0.88,
+                reasoning: Some(
+                    "while let expression creates a loop that continues while pattern matches. \
+                     Commonly used with iterators and Option/Result types."
+                        .to_string(),
+                ),
+                code_snippet: pattern_str.clone(),
+            });
+
+            // Create decision node for loop control flow
+            let node_id = self.next_node_id();
+            let pattern_name = self.extract_pattern_name(&let_expr.pat);
+            
+            self.decision_nodes.push(DecisionNode {
+                id: node_id,
+                decision_type: DecisionType::ControlFlow,
+                description: format!(
+                    "while let {} = <expr> - Pattern-based loop continuation",
+                    pattern_name
+                ),
+                alternatives: vec![
+                    "Use loop with manual break on None/Err".to_string(),
+                    "Use for loop if iterating a collection".to_string(),
+                    "Use iterator combinators (take_while, filter_map)".to_string(),
+                ],
+                chosen: format!("while let {} (loops until pattern fails)", pattern_name),
+                confidence: 0.88,
+                reasoning: Some(
+                    "while let is idiomatic for consuming iterators or processing until None/Err. \
+                     More readable than manual loop/break patterns."
+                        .to_string(),
+                ),
+            });
+        }
+
+        // Visit loop body
+        self.visit_block(&while_expr.body);
+    }
+
+    fn extract_pattern_name(&self, pat: &Pat) -> String {
+        match pat {
+            Pat::Ident(ident) => ident.ident.to_string(),
+            Pat::TupleStruct(tuple) => {
+                let path = &tuple.path;
+                quote::quote!(#path).to_string()
+            }
+            Pat::Struct(struct_pat) => {
+                let path = &struct_pat.path;
+                quote::quote!(#path).to_string()
+            }
+            Pat::Tuple(tuple) => format!("({})", 
+                tuple.elems.iter().map(|_| "_").collect::<Vec<_>>().join(", ")
+            ),
+            _ => quote::quote!(#pat).to_string(),
+        }
+    }
+
+    fn analyze_function(&mut self, func: &ItemFn) {
+        let start_line = self.get_line_number(func.sig.fn_token.span.start().into());
+
+        // Check for Result/Option return types (error handling pattern)
+        let return_type = &func.sig.output;
+        if let syn::ReturnType::Type(_, ty) = return_type {
+            let type_str = quote::quote!(#ty).to_string();
+            if type_str.contains("Result") || type_str.contains("Option") {
+                let confidence = if type_str.contains("Result") { 0.85 } else { 0.75 };
+                let pattern_type = if type_str.contains("Result") {
+                    "Error Handling (Result)"
+                } else {
+                    "Optional Values (Option)"
+                };
+
+                self.patterns.push(Pattern {
+                    pattern_type: pattern_type.to_string(),
+                    start_line,
+                    end_line: start_line + 1,
+                    confidence,
+                    reasoning: Some(format!(
+                        "Function returns {}, enabling explicit error/absence handling",
+                        if type_str.contains("Result") { "Result<T,E>" } else { "Option<T>" }
+                    )),
+                    code_snippet: format!("fn {}(...) -> {}", func.sig.ident, type_str),
+                });
+
+                let node_id = self.next_node_id();
+                self.decision_nodes.push(DecisionNode {
+                    id: node_id,
+                    decision_type: DecisionType::ErrorHandling,
+                    description: format!("Return type: {}", type_str),
+                    alternatives: vec![
+                        "panic! on error".to_string(),
+                        "unwrap/expect".to_string(),
+                        "custom error enum".to_string(),
+                    ],
+                    chosen: type_str.clone(),
+                    confidence,
+                    reasoning: Some("Using Result/Option for explicit error handling".to_string()),
+                });
+            }
+        }
+
+        // Visit function body to find if let / while let patterns
+        for stmt in &func.block.stmts {
+            self.visit_stmt(stmt);
+        }
+    }
+}
+
+impl<'a> Visit<'a> for PatternVisitor<'a> {
+    fn visit_file(&mut self, file: &'a File) {
+        for item in &file.items {
+            match item {
+                Item::Fn(func) => self.analyze_function(func),
+                Item::Use(use_item) => {
+                    let path = quote::quote!(#use_item).to_string();
+                    let category = if path.contains("std::") {
+                        "Standard Library"
+                    } else if path.contains("::") {
+                        "External Crate"
+                    } else {
+                        "Local Module"
+                    };
+
+                    self.imports.push(Import {
+                        path: path.clone(),
+                        category: category.to_string(),
+                        confidence: 0.9,
+                        reasoning: Some(format!("Import from {}", category)),
+                    });
+
+                    let node_id = self.next_node_id();
+                    self.decision_nodes.push(DecisionNode {
+                        id: node_id,
+                        decision_type: DecisionType::ImportChoice,
+                        description: format!("Import: {}", path),
+                        alternatives: vec!["Manual implementation".to_string()],
+                        chosen: path,
+                        confidence: 0.9,
+                        reasoning: Some("Using external dependency".to_string()),
+                    });
+                }
+                Item::Impl(impl_item) => {
+                    self.visit_item_impl(impl_item);
+                }
+                Item::Struct(_) | Item::Enum(_) => {
+                    // Could add struct/enum pattern analysis here
+                }
+                _ => {}
+            }
+        }
+    }
+
+    fn visit_item_impl(&mut self, impl_item: &'a ItemImpl) {
+        for item in &impl_item.items {
+            if let syn::ImplItem::Fn(method) = item {
+                self.analyze_function(&syn::ItemFn {
+                    attrs: method.attrs.clone(),
+                    vis: method.vis.clone(),
+                    sig: method.sig.clone(),
+                    block: Box::new(method.block.clone()),
+                });
+            }
+        }
+    }
+
+    fn visit_expr(&mut self, expr: &'a Expr) {
+        match expr {
+            Expr::If(if_expr) => {
+                self.analyze_if_let(if_expr);
+            }
+            Expr::While(while_expr) => {
+                self.analyze_while_let(while_expr);
+            }
+            Expr::Match(match_expr) => {
+                let start_line = self.get_line_number(match_expr.match_token.span.start().into());
+                
+                self.patterns.push(Pattern {
+                    pattern_type: "Pattern Matching (match)".to_string(),
+                    start_line,
+                    end_line: start_line + match_expr.arms.len(),
+                    confidence: 0.90,
+                    reasoning: Some("Exhaustive pattern matching with match expression".to_string()),
+                    code_snippet: quote::quote!(#match_expr).to_string().lines().take(10).collect::<Vec<_>>().join("\n"),
+                });
+
+                let node_id = self.next_node_id();
+                self.decision_nodes.push(DecisionNode {
+                    id: node_id,
+                    decision_type: DecisionType::PatternSelection,
+                    description: format!("match expression with {} arms", match_expr.arms.len()),
+                    alternatives: vec![
+                        "if let chain".to_string(),
+                        "multiple if statements".to_string(),
+                    ],
+                    chosen: "match (exhaustive)".to_string(),
+                    confidence: 0.90,
+                    reasoning: Some("match provides exhaustive pattern matching".to_string()),
+                });
+            }
+            _ => {}
+        }
+
+        // Continue visiting nested expressions
+        syn::visit::visit_expr(self, expr);
+    }
+
+    fn visit_stmt(&mut self, stmt: &'a Stmt) {
+        syn::visit::visit_stmt(self, stmt);
     }
 }
 
@@ -43,243 +359,43 @@ impl Default for CodeAnalyzer {
     }
 }
 
-struct PatternVisitor {
-    patterns: Vec<Pattern>,
-    imports: Vec<Import>,
-    decisions: Vec<DecisionNode>,
-    current_line: usize,
-}
-
-impl PatternVisitor {
-    fn new() -> Self {
-        Self {
-            patterns: Vec::new(),
-            imports: Vec::new(),
-            decisions: Vec::new(),
-            current_line: 1,
-        }
-    }
-
-    fn detect_error_handling(&mut self, func: &ItemFn) {
-        let func_str = quote::quote!(#func).to_string();
-        
-        if func_str.contains("Result<") {
-            let start = func.sig.span().start().line;
-            let end = func.block.span().end().line;
-            
-            self.patterns.push(Pattern {
-                pattern_type: "Error Handling".to_string(),
-                start_line: start,
-                end_line: end,
-                confidence: 0.85,
-                reasoning: Some("Function returns Result type, implementing standard Rust error handling".to_string()),
-                code_snippet: format!("fn {}(...) -> Result<...>", func.sig.ident),
-            });
-            
-            self.decisions.push(DecisionNode {
-                id: format!("decision_{}", self.decisions.len() + 1),
-                decision_type: DecisionType::ErrorHandling,
-                description: format!("Error handling strategy for function '{}'", func.sig.ident),
-                alternatives: vec![
-                    Alternative {
-                        name: "Result<T, E>".to_string(),
-                        description: "Standard Rust error handling with Result type".to_string(),
-                        score: 0.9,
-                    },
-                    Alternative {
-                        name: "Option<T>".to_string(),
-                        description: "Simple success/failure with Option type".to_string(),
-                        score: 0.6,
-                    },
-                    Alternative {
-                        name: "Panic".to_string(),
-                        description: "Unrecoverable error via panic!()".to_string(),
-                        score: 0.3,
-                    },
-                ],
-                chosen: "Result<T, E>".to_string(),
-                confidence: 0.85,
-            });
-        }
-        
-        if func_str.contains("?") {
-            self.patterns.push(Pattern {
-                pattern_type: "Question Mark Operator".to_string(),
-                start_line: func.sig.span().start().line,
-                end_line: func.block.span().end().line,
-                confidence: 0.9,
-                reasoning: Some("Uses ? operator for clean error propagation".to_string()),
-                code_snippet: "Uses ? for error propagation".to_string(),
-            });
-        }
-    }
-
-    fn detect_iterator_patterns(&mut self, func: &ItemFn) {
-        let func_str = quote::quote!(#func).to_string();
-        
-        let iterator_methods = ["map", "filter", "fold", "collect", "for_each"];
-        let found_methods: Vec<_> = iterator_methods.iter()
-            .filter(|&&method| func_str.contains(method))
-            .collect();
-        
-        if !found_methods.is_empty() {
-            self.patterns.push(Pattern {
-                pattern_type: "Iterator Chain".to_string(),
-                start_line: func.sig.span().start().line,
-                end_line: func.block.span().end().line,
-                confidence: 0.8,
-                reasoning: Some(format!(
-                    "Uses functional iterator methods: {}",
-                    found_methods.iter().map(|s| s.to_string()).collect::<Vec<_>>().join(", ")
-                )),
-                code_snippet: format!("Iterator chain with: {}", found_methods.join(", ")),
-            });
-        }
-    }
-
-    fn detect_lifetime_patterns(&mut self, func: &ItemFn) {
-        if !func.sig.generics.lifetimes().collect::<Vec<_>>().is_empty() {
-            self.patterns.push(Pattern {
-                pattern_type: "Lifetime Annotations".to_string(),
-                start_line: func.sig.span().start().line,
-                end_line: func.sig.span().end().line,
-                confidence: 0.75,
-                reasoning: Some("Explicit lifetime annotations for reference management".to_string()),
-                code_snippet: format!("fn {}<'a>(...)", func.sig.ident),
-            });
-            
-            self.decisions.push(DecisionNode {
-                id: format!("decision_{}", self.decisions.len() + 1),
-                decision_type: DecisionType::LifetimeAnnotation,
-                description: format!("Lifetime annotation strategy for '{}'", func.sig.ident),
-                alternatives: vec![
-                    Alternative {
-                        name: "Explicit lifetimes".to_string(),
-                        description: "Manually specified lifetime parameters".to_string(),
-                        score: 0.8,
-                    },
-                    Alternative {
-                        name: "Elided lifetimes".to_string(),
-                        description: "Let compiler infer lifetimes".to_string(),
-                        score: 0.7,
-                    },
-                ],
-                chosen: "Explicit lifetimes".to_string(),
-                confidence: 0.75,
-            });
-        }
-    }
-}
-
-impl<'ast> Visit<'ast> for PatternVisitor {
-    fn visit_item_fn(&mut self, func: &'ast ItemFn) {
-        self.detect_error_handling(func);
-        self.detect_iterator_patterns(func);
-        self.detect_lifetime_patterns(func);
-        visit::visit_item_fn(self, func);
-    }
-
-    fn visit_item_impl(&mut self, impl_block: &'ast ItemImpl) {
-        let impl_str = quote::quote!(#impl_block).to_string();
-        
-        if impl_str.contains("impl") {
-            self.patterns.push(Pattern {
-                pattern_type: "Trait Implementation".to_string(),
-                start_line: impl_block.impl_token.span.start().line,
-                end_line: impl_block.brace_token.span.close().line,
-                confidence: 0.85,
-                reasoning: Some("Custom trait implementation for type".to_string()),
-                code_snippet: "impl Trait for Type { ... }".to_string(),
-            });
-        }
-        
-        visit::visit_item_impl(self, impl_block);
-    }
-
-    fn visit_item_struct(&mut self, struct_item: &'ast ItemStruct) {
-        self.patterns.push(Pattern {
-            pattern_type: "Data Structure".to_string(),
-            start_line: struct_item.struct_token.span.start().line,
-            end_line: struct_item.semi_token.map(|s| s.span.end().line)
-                .unwrap_or_else(|| struct_item.struct_token.span.end().line),
-            confidence: 0.9,
-            reasoning: Some("Custom data structure definition".to_string()),
-            code_snippet: format!("struct {}", struct_item.ident),
-        });
-        
-        visit::visit_item_struct(self, struct_item);
-    }
-
-    fn visit_item_use(&mut self, use_item: &'ast ItemUse) {
-        let use_str = quote::quote!(#use_item).to_string();
-        
-        let is_std = use_str.contains("std::");
-        let confidence = if is_std { 0.9 } else { 0.7 };
-        
-        self.imports.push(Import {
-            module: use_str.clone(),
-            items: vec!["imported".to_string()],
-            reasoning: if is_std {
-                "Standard library import".to_string()
-            } else {
-                "External crate import".to_string()
-            },
-            confidence,
-        });
-        
-        visit::visit_item_use(self, use_item);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_analyze_simple_function() {
+    fn test_if_let_detection() {
         let source = r#"
-            fn add(a: i32, b: i32) -> i32 {
-                a + b
-            }
+fn main() {
+    let x = Some(5);
+    if let Some(value) = x {
+        println!("Got: {}", value);
+    }
+}
         "#;
-        
+
         let analyzer = CodeAnalyzer::new();
-        let result = analyzer.analyze(source, "test.rs");
-        assert!(result.is_ok());
+        let report = analyzer.analyze(source, Path::new("test.rs")).unwrap();
+
+        assert!(report.patterns.iter().any(|p| p.pattern_type.contains("if let")));
+        assert!(report.decision_nodes.iter().any(|n| n.description.contains("if let")));
     }
 
     #[test]
-    fn test_detect_result_pattern() {
+    fn test_while_let_detection() {
         let source = r#"
-            fn divide(a: i32, b: i32) -> Result<i32, String> {
-                if b == 0 {
-                    Err("Division by zero".to_string())
-                } else {
-                    Ok(a / b)
-                }
-            }
-        "#;
-        
-        let analyzer = CodeAnalyzer::new();
-        let report = analyzer.analyze(source, "test.rs").unwrap();
-        
-        assert!(report.patterns.iter().any(|p| p.pattern_type == "Error Handling"));
+fn main() {
+    let mut iter = vec![1, 2, 3].into_iter();
+    while let Some(value) = iter.next() {
+        println!("{}", value);
     }
-
-    #[test]
-    fn test_detect_iterator_chain() {
-        let source = r#"
-            fn process_numbers(nums: Vec<i32>) -> Vec<i32> {
-                nums.iter()
-                    .filter(|&x| x > 0)
-                    .map(|x| x * 2)
-                    .collect()
-            }
+}
         "#;
-        
+
         let analyzer = CodeAnalyzer::new();
-        let report = analyzer.analyze(source, "test.rs").unwrap();
-        
-        assert!(report.patterns.iter().any(|p| p.pattern_type == "Iterator Chain"));
+        let report = analyzer.analyze(source, Path::new("test.rs")).unwrap();
+
+        assert!(report.patterns.iter().any(|p| p.pattern_type.contains("while let")));
+        assert!(report.decision_nodes.iter().any(|n| n.description.contains("while let")));
     }
 }
