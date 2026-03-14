@@ -1,115 +1,134 @@
 # rust-pattern-viz
 
-*Make AI code generation decisions visible through interactive visualizations*
+**Visualize AI code generation decision trees for Rust projects**
 
 ## What is this?
 
-`rust-pattern-viz` is a Rust-native CLI tool and library that demystifies AI code generation by visualizing decision trees, pattern matching logic, and reasoning paths. It parses Rust source files with embedded AI suggestion metadata and generates interactive SVG/HTML visualizations showing what imports were considered, confidence scores per line, and the complete reasoning DAG. Perfect for code reviews, PR comments, and building trust in AI-assisted development.
+`rust-pattern-viz` is a Rust-native CLI tool and library that makes AI copilot behavior transparent. It parses Rust source files with embedded AI suggestion metadata, extracts pattern matching logic, and generates interactive SVG/HTML visualizations showing imports considered, per-line confidence scores, and reasoning DAGs. Ideal for code reviews, PR comments, and understanding how AI assistants make decisions.
 
 ## Features
 
-- **Decision Tree Extraction** – Parse AI suggestion metadata from Rust source files
-- **Interactive Visualizations** – Generate SVG/HTML graphs showing AI reasoning paths
-- **Confidence Heatmaps** – See per-line confidence scores for AI-generated code
-- **Import Analysis** – Track which imports were considered, chosen, or rejected
-- **Reasoning DAG** – Full directed acyclic graph of decision points
-- **CLI & Library** – Use as standalone tool or integrate into your Rust projects
-- **PR-Ready Output** – Export visualizations for code review comments
-- **Local Processing** – All analysis happens locally—no cloud uploads
+- **Parse AI metadata** from Rust source comments or sidecar files
+- **Extract decision trees** showing what alternatives the AI considered
+- **Generate interactive visualizations** (SVG + HTML) with zoom/pan controls
+- **LSP server integration** for real-time IDE insights
+- **VS Code extension** for seamless editor integration
+- **Confidence scoring** to highlight uncertain suggestions
+- **Export formats**: SVG, HTML, JSON, DOT (Graphviz)
+- **CLI and library** APIs for flexible integration
 
 ## Quick Start
 
 ### Installation
 
 ```bash
+# Install via cargo
 cargo install rust-pattern-viz
+
+# Or build from source
+git clone https://github.com/yourusername/rust-pattern-viz.git
+cd rust-pattern-viz
+cargo build --release
 ```
 
-Or add to your `Cargo.toml`:
-
-```toml
-[dependencies]
-rust-pattern-viz = "0.1"
-```
-
-### Usage
-
-#### CLI
-
-Analyze a Rust file with AI metadata:
+### Basic Usage
 
 ```bash
-rust-pattern-viz analyze src/main.rs --output report.html
+# Analyze a single file
+rust-pattern-viz analyze src/main.rs
+
+# Generate visualization
+rust-pattern-viz visualize src/main.rs --output decision-tree.html
+
+# Start LSP server for IDE integration
+rust-pattern-viz lsp
 ```
 
-Generate SVG visualization:
+### VS Code Extension
+
+1. Install the extension from `vscode-extension/`
+2. Open a Rust project
+3. Right-click any file → "Visualize AI Patterns"
+4. View decision trees inline or export to HTML
+
+## Usage Examples
+
+### CLI
 
 ```bash
-rust-pattern-viz visualize src/main.rs --format svg --output decision-tree.svg
+# Analyze with custom output format
+rust-pattern-viz analyze src/lib.rs --format json > analysis.json
+
+# Generate SVG with confidence threshold
+rust-pattern-viz visualize src/analyzer.rs --format svg --min-confidence 0.8
+
+# Batch process directory
+rust-pattern-viz analyze src/ --recursive --output reports/
 ```
 
-#### Library
+### Library
 
 ```rust
 use rust_pattern_viz::{Analyzer, Visualizer};
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Parse AI metadata from source
-    let analyzer = Analyzer::new();
-    let decisions = analyzer.analyze_file("src/main.rs")?;
-    
-    // Generate visualization
-    let visualizer = Visualizer::new();
-    visualizer.render_html(&decisions, "report.html")?;
-    
-    Ok(())
+// Parse source with AI metadata
+let analyzer = Analyzer::new();
+let decisions = analyzer.parse_file("src/main.rs")?;
+
+// Generate visualization
+let visualizer = Visualizer::new();
+let html = visualizer.render_html(&decisions)?;
+std::fs::write("output.html", html)?;
+```
+
+### Embedding AI Metadata
+
+Add comments to your Rust code:
+
+```rust
+// @ai-suggestion: considered std::collections::HashMap, confidence: 0.95
+// @ai-alternative: hashbrown::HashMap, confidence: 0.78
+use std::collections::HashMap;
+
+// @ai-pattern: builder pattern, confidence: 0.88
+// @ai-reasoning: mutable state, method chaining
+pub struct Config {
+    // ...
 }
 ```
 
-### Example Output
-
-See `examples/sample.rs` for annotated source code with AI metadata, and run:
-
-```bash
-cargo run --example sample
-```
-
-This generates an interactive HTML report showing:
-- Decision nodes for each AI suggestion
-- Confidence scores and alternative options considered
-- Import resolution paths
-- Pattern matching logic
-
 ## Tech Stack
 
-- **Rust** – Core language for parsing and analysis
-- **tree-sitter** – Syntax tree parsing
-- **SVG/HTML** – Visualization output formats
-- **Serde** – Serialization for metadata extraction
+- **Core**: Rust 2021 edition
+- **Parsing**: `syn`, `quote` for Rust AST manipulation
+- **Visualization**: `svg` crate, embedded JavaScript for interactivity
+- **LSP**: `tower-lsp` for Language Server Protocol
+- **VS Code Extension**: TypeScript + VS Code API
+- **CLI**: `clap` for argument parsing
+- **Testing**: `cargo test` with integration tests
 
 ## Development
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/rust-pattern-viz.git
-cd rust-pattern-viz
-
-# Build
-cargo build
-
 # Run tests
 cargo test
 
-# Run integration tests
-cargo test --test integration_test
+# Run with examples
+cargo run --example sample
+
+# Build VS Code extension
+cd vscode-extension
+npm install
+npm run compile
 ```
 
 ## CI/CD
 
-GitHub Actions workflow automatically:
-- Runs tests on push
-- Checks formatting and lints
-- Builds release artifacts
+GitHub Actions workflow (`.github/workflows/ci.yml`) automatically:
+- Runs tests on push/PR
+- Builds for Linux, macOS, Windows
+- Publishes releases to crates.io
+- Packages VS Code extension
 
 ## License
 
@@ -117,4 +136,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-*Built with 🦀 for developers who want to understand their AI copilots*
+**Contributing**: Issues and PRs welcome! See [ARCHITECTURE.md](ARCHITECTURE.md) for codebase overview.
